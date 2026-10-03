@@ -23,7 +23,7 @@ import {
   writeJson,
 } from './storage.js';
 import { createDefaultProfile, normalizeLegacyProfileDefaults } from './profileTemplate.js';
-import { sendResetEmail } from './mailService.js';
+import { sendResetEmail, sendVerificationEmail } from './mailService.js';
 
 const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'replace-me-in-env';
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
@@ -348,32 +348,6 @@ export const consumeVerificationToken = async (tokenHash) => {
   writeJson(db);
   if (new Date(found.expiresAt).getTime() <= Date.now()) return null;
   return found;
-};
-
-export const sendVerificationEmail = async ({ toEmail, verificationToken, name }) => {
-  const appUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
-  const verifyLink = `${appUrl}/verify-email?token=${encodeURIComponent(verificationToken)}`;
-  const tx = await buildTransport();
-
-  if (!tx) {
-    console.log(`Verification token for ${toEmail}: ${verificationToken}`);
-    console.log(`Verify link: ${verifyLink}`);
-    return;
-  }
-
-  await tx.sendMail({
-    from: process.env.MAIL_FROM || 'no-reply@collabhub.local',
-    to: toEmail,
-    subject: 'Verify your CollabHub account',
-    text: `Hi ${name},\n\nWelcome to CollabHub! Please verify your email by clicking this link:\n${verifyLink}\n\nThis link expires in 24 hours.`,
-    html: `
-      <p>Hi ${name},</p>
-      <p>Welcome to CollabHub! Please verify your email by clicking the button below:</p>
-      <p><a href="${verifyLink}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:white;text-decoration:none;border-radius:6px;">Verify Email</a></p>
-      <p>Or copy this link: <a href="${verifyLink}">${verifyLink}</a></p>
-      <p>This link expires in 24 hours.</p>
-    `,
-  });
 };
 
 export const verifyEmail = async ({ token }) => {
