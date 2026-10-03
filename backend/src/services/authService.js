@@ -156,7 +156,10 @@ export const registerWithVerification = async ({ name, email, password }) => {
     expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000).toISOString(),
   });
 
-  await sendVerificationEmail({ toEmail: normalizedEmail, verificationToken, name: user.name });
+  // Fire-and-forget: don't block response on slow SMTP
+  sendVerificationEmail({ toEmail: normalizedEmail, verificationToken, name: user.name }).catch((err) => {
+    console.error('Failed to send verification email:', err);
+  });
 
   return { ok: true, requiresVerification: true, email: normalizedEmail };
 };
@@ -288,7 +291,10 @@ export const requestPasswordReset = async ({ email }) => {
     expiresAt: new Date(Date.now() + RESET_TOKEN_EXPIRES_MINUTES * 60 * 1000).toISOString(),
   });
 
-  await sendResetEmail({ toEmail: user.email, resetToken });
+  // Fire-and-forget: don't block response on slow SMTP
+  sendResetEmail({ toEmail: user.email, resetToken }).catch((err) => {
+    console.error('Failed to send reset email:', err);
+  });
 
   const response = { ok: true };
   if (process.env.NODE_ENV !== 'production') {
