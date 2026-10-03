@@ -93,6 +93,7 @@ const mongo = async () => {
 };
 
 export const getStorageProvider = () => dbProvider;
+export { dbProvider, mongo, readJson, writeJson };
 
 export const initializeStorage = async () => {
   if (dbProvider === 'mongo') {
