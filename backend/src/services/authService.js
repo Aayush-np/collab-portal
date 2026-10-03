@@ -133,7 +133,7 @@ export const registerWithVerification = async ({ name, email, password }) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const userId = uuidv4();
   const user = {
-    id: uuidv4(),
+    id: userId,
     name: String(name || '').trim(),
     email: normalizedEmail,
     passwordHash,
