@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Builds
+dist/
+
+# Secrets & local config — NEVER commit
+.env
+.env.*
+!.env.production.example
+
+# Local JSON database (contains user data)
+backend/data/
+
+# Logs & OS junk
+*.log
+.DS_Store
+Thumbs.db

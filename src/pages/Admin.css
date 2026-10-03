@@ -1,0 +1,224 @@
+.admin-page h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+}
+
+.admin-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.admin-stats { margin-bottom: 14px; }
+
+.admin-stat-card {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.admin-stat-card .stat-icon {
+  width: 34px;
+  height: 34px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lime-pale);
+  margin-bottom: 4px;
+}
+
+.admin-stat-card .stat-val { font-size: 26px; }
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-users-card,
+.admin-editor-card,
+.admin-audit-card {
+  min-height: 520px;
+}
+
+.admin-list-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.admin-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 460px;
+  overflow: auto;
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 8px;
+}
+
+.admin-pagination span {
+  font-size: 12px;
+  color: var(--gray-300);
+}
+
+.admin-user-item {
+  background: var(--navy-700);
+  border: 1px solid var(--navy-600);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  color: var(--white);
+  width: 100%;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-user-item.active {
+  border-color: rgba(99,102,241, 0.45);
+  box-shadow: var(--shadow-lime);
+}
+
+.admin-user-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-user-email {
+  font-size: 11px;
+  color: var(--gray-300);
+  overflow-wrap: anywhere;
+}
+
+.admin-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.admin-danger {
+  border-color: rgba(248,113,113, 0.4);
+  color: #fca5a5;
+}
+
+.btn-danger-solid {
+  background: linear-gradient(135deg, #f87171, #dc2626);
+  color: #ffffff;
+}
+
+.btn-danger-solid:hover {
+  box-shadow: 0 4px 16px rgba(248, 113, 113, 0.35);
+  transform: translateY(-1px);
+}
+
+.admin-confirm-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #fca5a5;
+}
+
+.admin-error {
+  margin-bottom: 12px;
+  border-color: rgba(248,113,113, 0.4);
+  color: #fecaca;
+}
+
+.admin-audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 460px;
+  overflow: auto;
+}
+
+.admin-audit-item {
+  border: 1px solid var(--navy-600);
+  border-radius: var(--radius-md);
+  background: var(--navy-700);
+  padding: 10px;
+}
+
+.admin-audit-main {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--off-white);
+}
+
+.admin-audit-sub {
+  font-size: 11px;
+  color: var(--gray-300);
+  overflow-wrap: anywhere;
+}
+
+/* ── Responsive ─────────────────────────────────────────────
+   Wide (default): 280px | 1fr | 1fr | 1fr
+   ≤1400px:        280px | 1fr | 1fr   (users list spans 2 rows)
+   ≤1100px:        full-width users row, then 2 columns
+   ≤720px:         single column                       */
+@media (max-width: 1400px) and (min-width: 1101px) {
+  .admin-grid {
+    grid-template-columns: 280px 1fr 1fr;
+  }
+  .admin-users-card {
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 721px) {
+  .admin-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-users-card {
+    grid-column: 1 / -1;
+  }
+  .admin-users-card,
+  .admin-editor-card,
+  .admin-audit-card {
+    min-height: auto;
+  }
+  .admin-users-list,
+  .admin-audit-list {
+    max-height: 340px;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-users-card,
+  .admin-editor-card,
+  .admin-audit-card {
+    min-height: auto;
+  }
+  .admin-users-list,
+  .admin-audit-list {
+    max-height: 300px;
+  }
+  .admin-page h1 {
+    font-size: 19px;
+  }
+  .admin-pagination {
+    flex-wrap: wrap;
+  }
+}

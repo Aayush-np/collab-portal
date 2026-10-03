@@ -1,0 +1,18 @@
+# Netlify security headers (Vite copies public/ into dist/ on build)
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://collab-portal-api.onrender.com wss://collab-portal-api.onrender.com https://accounts.google.com https://challenges.cloudflare.com; frame-src https://accounts.google.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+# Hashed, immutable build assets — safe to cache forever
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Entry document — never cache (so new deploys go live instantly)
+/index.html
+  Cache-Control: no-store

@@ -1,0 +1,170 @@
+.welcome-banner {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(420px 220px at 92% -40%, rgba(99,102,241, 0.16), transparent 60%),
+    radial-gradient(380px 220px at 8% 130%, rgba(34,211,238, 0.18), transparent 60%),
+    linear-gradient(135deg, var(--navy-700) 0%, var(--navy-600) 100%);
+  border: 1px solid var(--navy-500);
+  border-left: 4px solid var(--lime);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.welcome-banner .welcome-greeting {
+  letter-spacing: -0.4px;
+}
+.welcome-greeting {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.welcome-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.stats-row { margin-bottom: 28px; }
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--navy-700) 0%, var(--navy-600) 100%);
+  border: 1px solid var(--navy-500);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition);
+}
+
+.stat-btn {
+  border: none;
+  background: linear-gradient(135deg, var(--navy-700) 0%, var(--navy-600) 100%);
+  cursor: pointer;
+  padding: 20px 16px;
+}
+
+.stat-btn:hover {
+  background: linear-gradient(135deg, var(--navy-600) 0%, var(--navy-500) 100%);
+  border-color: var(--lime);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(99,102,241, 0.15);
+}
+
+.stat-icon {
+  color: var(--lime);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--lime);
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gray-300);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.section-header h2 { font-size: 18px; font-weight: 700; }
+
+.projects-list { display: flex; flex-direction: column; gap: 16px; }
+
+.dashboard-side { display: flex; flex-direction: column; gap: 16px; }
+
+.widget { padding: 16px; }
+.widget-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700;
+  margin-bottom: 14px; color: var(--white);
+}
+
+/* Match list */
+.match-list { display: flex; flex-direction: column; gap: 10px; }
+.match-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  cursor: pointer;
+}
+.match-item:hover { background: var(--navy-700); }
+.match-info { flex: 1; min-width: 0; }
+.match-name { font-size: 13px; font-weight: 600; color: var(--white); }
+.match-skills { font-size: 11px; }
+.match-score {
+  font-size: 13px; font-weight: 800;
+  color: var(--lime);
+  background: rgba(99,102,241,0.1);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* Notifications */
+.notif-list { display: flex; flex-direction: column; gap: 1px; }
+.notif-item-row {
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+}
+.notif-item-row.unread {
+  border-left-color: var(--lime);
+  background: rgba(99,102,241,0.05);
+}
+.notif-text { font-size: 12px; color: var(--off-white); margin-bottom: 2px; }
+.notif-time { font-size: 10px; }
+
+/* Skill progress */
+.skill-progress-row { margin-bottom: 10px; }
+.skill-progress-header {
+  display: flex; justify-content: space-between;
+  margin-bottom: 5px;
+}
+.skill-progress-name { font-size: 12px; font-weight: 600; color: var(--off-white); }
+
+.full-width { width: 100%; justify-content: center; }
+
+/* Project Detail Modal */
+.project-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4,7,16, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 18px;
+}
+
+.project-modal {
+  width: min(700px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-side { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+}
