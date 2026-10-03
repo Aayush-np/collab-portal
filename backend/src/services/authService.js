@@ -26,6 +26,7 @@ const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || `${ACCESS_TOKEN_SECRET}-refresh`;
 const REFRESH_TOKEN_EXPIRES_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRES_DAYS || 30);
 const RESET_TOKEN_EXPIRES_MINUTES = Number(process.env.RESET_TOKEN_EXPIRES_MINUTES || 20);
+const VERIFICATION_TOKEN_EXPIRES_HOURS = Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24);
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
 
 // Only CMRIT accounts are allowed (override via ALLOWED_EMAIL_DOMAIN in env).
@@ -116,7 +117,7 @@ const createSession = async (user, profile) => {
 
 export const findUserById = async (id) => findUserByIdFromStorage(id);
 
-export const registerUser = async ({ name, email, password }) => {
+export const registerWithVerification = async ({ name, email, password }) => {
   const normalizedEmail = String(email || '').trim().toLowerCase();
 
   assertAllowedEmail(normalizedEmail);
@@ -126,6 +127,7 @@ export const registerUser = async ({ name, email, password }) => {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
+  const userId = uuidv4();
   const user = {
     id: uuidv4(),
     name: String(name || '').trim(),
@@ -134,6 +136,7 @@ export const registerUser = async ({ name, email, password }) => {
     provider: 'local',
     role: roleForEmail(normalizedEmail),
     googleId: null,
+    emailVerified: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -142,7 +145,16 @@ export const registerUser = async ({ name, email, password }) => {
   const profile = normalizeLegacyProfileDefaults(createDefaultProfile({ userId: user.id, name: user.name, email: user.email }));
   await upsertProfile(user.id, profile);
 
-  return createSession(user, profile);
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  await createVerificationToken({
+    userId,
+    tokenHash: hashToken(verificationToken),
+    expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000).toISOString(),
+  });
+
+  await sendVerificationEmail({ toEmail: normalizedEmail, verificationToken, name: user.name });
+
+  return { ok: true, requiresVerification: true, email: normalizedEmail };
 };
 
 export const loginUser = async ({ email, password }) => {
@@ -157,6 +169,10 @@ export const loginUser = async ({ email, password }) => {
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
     throw new Error('Invalid email or password.');
+  }
+
+  if (user.emailVerified === false) {
+    throw new Error('Please verify your email before logging in. Check your inbox for the verification link.');
   }
 
   const rawProfile = (await findProfileByUserId(user.id)) || createDefaultProfile({ userId: user.id, name: user.name, email: user.email });
@@ -295,6 +311,79 @@ export const resetPasswordWithToken = async ({ token, newPassword }) => {
     updatedAt: new Date().toISOString(),
   });
 
+  return { ok: true };
+};
+
+export const createVerificationToken = async ({ userId, tokenHash, expiresAt }) => {
+  const payload = { userId, tokenHash, expiresAt };
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    await db.collection('verificationTokens').insertOne(payload);
+    return;
+  }
+  const db = readJson();
+  db.verificationTokens = db.verificationTokens || [];
+  db.verificationTokens.push(payload);
+  writeJson(db);
+};
+
+export const consumeVerificationToken = async (tokenHash) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    const found = await db.collection('verificationTokens').findOne({ tokenHash }, { projection: { _id: 0 } });
+    if (!found) return null;
+    await db.collection('verificationTokens').deleteOne({ tokenHash });
+    if (new Date(found.expiresAt).getTime() <= Date.now()) return null;
+    return found;
+  }
+  const db = readJson();
+  db.verificationTokens = db.verificationTokens || [];
+  const found = db.verificationTokens.find((t) => t.tokenHash === tokenHash);
+  if (!found) return null;
+  db.verificationTokens = db.verificationTokens.filter((t) => t.tokenHash !== tokenHash);
+  writeJson(db);
+  if (new Date(found.expiresAt).getTime() <= Date.now()) return null;
+  return found;
+};
+
+export const sendVerificationEmail = async ({ toEmail, verificationToken, name }) => {
+  const appUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+  const verifyLink = `${appUrl}/verify-email?token=${encodeURIComponent(verificationToken)}`;
+  const tx = await buildTransport();
+
+  if (!tx) {
+    console.log(`Verification token for ${toEmail}: ${verificationToken}`);
+    console.log(`Verify link: ${verifyLink}`);
+    return;
+  }
+
+  await tx.sendMail({
+    from: process.env.MAIL_FROM || 'no-reply@collabhub.local',
+    to: toEmail,
+    subject: 'Verify your CollabHub account',
+    text: `Hi ${name},\n\nWelcome to CollabHub! Please verify your email by clicking this link:\n${verifyLink}\n\nThis link expires in 24 hours.`,
+    html: `
+      <p>Hi ${name},</p>
+      <p>Welcome to CollabHub! Please verify your email by clicking the button below:</p>
+      <p><a href="${verifyLink}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:white;text-decoration:none;border-radius:6px;">Verify Email</a></p>
+      <p>Or copy this link: <a href="${verifyLink}">${verifyLink}</a></p>
+      <p>This link expires in 24 hours.</p>
+    `,
+  });
+};
+
+export const verifyEmail = async ({ token }) => {
+  const consumed = await consumeVerificationToken(hashToken(token));
+  if (!consumed) {
+    throw new Error('Invalid or expired verification token.');
+  }
+
+  const user = await findUserByIdFromStorage(consumed.userId);
+  if (!user) {
+    throw new Error('User not found.');
+  }
+
+  await updateUser(user.id, { emailVerified: true, updatedAt: new Date().toISOString() });
   return { ok: true };
 };
 

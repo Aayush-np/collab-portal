@@ -408,17 +408,10 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
           </form>
         )}
 
-        {(mode === 'login' || mode === 'register') && <div className="auth-divider"><span>or</span></div>}
-
-        {(mode === 'login' || mode === 'register') && googleEnabled ? (
+        {googleEnabled ? (
           <div id="google-signin-btn" className="google-btn-wrap" />
         ) : null}
 
-        {mode === 'forgot' && (
-          <button type="button" className="auth-link-btn" onClick={() => setMode('reset')}>
-            I already have a reset token
-          </button>
-        )}
       </div>
     </div>
   );

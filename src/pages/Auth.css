@@ -214,6 +214,26 @@
   animation: auth-spin 0.9s linear infinite;
 }
 
+.auth-spinner {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.auth-status-icon {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.auth-status-icon.success {
+  color: var(--success);
+}
+
+.auth-status-icon.error {
+  color: var(--danger);
+}
+
 @keyframes auth-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

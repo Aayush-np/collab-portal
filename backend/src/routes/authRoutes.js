@@ -5,9 +5,10 @@ import {
   loginWithGoogle,
   logoutSession,
   refreshSession,
-  registerUser,
+  registerWithVerification,
   requestPasswordReset,
   resetPasswordWithToken,
+  verifyEmail,
 } from '../services/authService.js';
 import { requireAuth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
@@ -60,10 +61,23 @@ router.post('/register', authLimiter, verifyCaptcha, async (req, res) => {
   }
 
   try {
-    const session = await registerUser({ name, email, password });
-    return res.status(201).json(session);
+    const result = await registerWithVerification({ name, email, password });
+    return res.status(201).json(result);
   } catch (error) {
     return res.status(400).json({ error: error.message || 'Could not create account.' });
+  }
+});
+
+router.post('/verify-email', async (req, res) => {
+  const { token } = req.body || {};
+  if (!token) {
+    return res.status(400).json({ error: 'Verification token is required.' });
+  }
+  try {
+    const result = await verifyEmail({ token });
+    return res.json(result);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification failed.' });
   }
 });
 

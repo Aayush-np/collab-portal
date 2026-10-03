@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Requests from './pages/Requests';
 import AuthPage from './pages/AuthPage';
+import VerifyEmail from './pages/VerifyEmail';
 import OtherUserProfile from './pages/OtherUserProfile';
 import Toaster from './components/Toaster';
 import { apiGet, apiPost, apiPut } from './services/api';
@@ -355,10 +356,16 @@ export default function App() {
   const handleRegister = async (payload) => {
     setAuthLoading(true);
     try {
-      const session = await apiPost('/auth/register', payload);
-      applySession(session);
-    } finally {
+      const result = await apiPost('/auth/register', payload);
+      if (result.requiresVerification) {
+        setAuthLoading(false);
+        setPage('verify-email');
+      } else {
+        applySession(result);
+      }
+    } catch (err) {
       setAuthLoading(false);
+      throw err;
     }
   };
 
@@ -455,6 +462,8 @@ export default function App() {
         return isAdminRole
           ? <Admin accessToken={accessToken} withAccessRetry={withAccessRetry} authUser={authUser} />
           : <Dashboard setPage={setPage} currentUser={currentUser} />;
+      case 'verify-email':
+        return <VerifyEmail />;
       default:
         return <Dashboard setPage={setPage} currentUser={currentUser} />;
     }
