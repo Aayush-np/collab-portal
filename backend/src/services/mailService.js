@@ -1,8 +1,10 @@
 import nodemailer from 'nodemailer';
 
 // Normalize APP_BASE_URL/FRONTEND_URL: avoid "//?resetToken=" double slashes.
+// FRONTEND_URL may be a comma-separated list — links use the first entry.
 const getAppBaseUrl = () =>
   String(process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')[0]
     .trim()
     .replace(/\/+$/, '');
 

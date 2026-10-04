@@ -23,7 +23,7 @@ A full-stack collaboration platform for CMRIT students to discover, post, and co
 | Database | MongoDB Atlas (production) / JSON file (dev) |
 | Auth | JWT (access + refresh tokens), bcrypt, email verification |
 | Real-time | Socket.IO with JWT auth |
-| Deployment | Netlify (frontend) + Render (backend) |
+| Deployment | Vercel (frontend) + Render (backend) |
 
 ## 📦 Project Structure
 
@@ -43,7 +43,7 @@ collab-portal/
 │   ├── services/             # API client
 │   └── App.jsx               # Main app with routing
 ├── public/                   # Static assets, headers, robots.txt
-├── netlify.toml              # Netlify config + redirects
+├── vercel.json                # Vercel config + rewrites + security headers
 └── package.json
 ```
 
@@ -90,21 +90,19 @@ VITE_SOCKET_URL=http://localhost:4000
 
 | Platform | Purpose | Cost |
 |----------|---------|------|
-| **Netlify** | Frontend hosting | Free |
+| **Vercel** | Frontend hosting | Free (Hobby) |
 | **Render** | Backend API + Socket.IO | Free (750 hrs/mo) |
 | **MongoDB Atlas** | Database | Free (512 MB) |
-| **Brevo** | Transactional email (SMTP/API) | Free (300/day) |
+| **Brevo** | Transactional email (API/SMTP) | Free (300/day) |
 
 ### Deploy Steps
 
 1. **Push to GitHub** (this repo)
 2. **MongoDB Atlas** → Create cluster → Get connection string
-3. **Brevo** → Create account → Get SMTP credentials → Add sender (e.g., `no-reply@brevo.com`)
+3. **Brevo** → Create account → Generate API key → Add verified sender
 4. **Render** → New Web Service → Connect GitHub repo → Add env vars → Deploy
-5. **Netlify** → Import from GitHub → Build: `npm run build`, Publish: `dist` → Add env vars
-6. **Update Render** → Set `FRONTEND_URL` and `APP_BASE_URL` to your Netlify URL
-
-See the full guide in `docs/DEPLOYMENT.md` (if present) or the original deployment docs.
+5. **Vercel** → Import from GitHub → Framework: Vite (auto-detected) → Add env vars → Deploy
+6. **Update Render** → Set `FRONTEND_URL` and `APP_BASE_URL` to your Vercel URL
 
 ### Required Render Environment Variables
 
@@ -121,15 +119,20 @@ ACCESS_TOKEN_EXPIRES_IN=15m
 REFRESH_TOKEN_EXPIRES_DAYS=30
 RESET_TOKEN_EXPIRES_MINUTES=20
 
-# Email (Brevo SMTP)
+# Comma-separated list of allowed frontend origins (no trailing slashes).
+# Multiple frontends can share one backend, e.g. old + new domains during migration.
+FRONTEND_URL=https://your-app.vercel.app
+APP_BASE_URL=https://your-app.vercel.app
+
+# Email (Brevo API — recommended; works from any host IP)
+BREVO_API_KEY=xkeysib-your-brevo-api-key
+# SMTP fallback (optional when BREVO_API_KEY is set)
 SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587
 SMTP_SECURE=0
 SMTP_USER=your-brevo-login-email
 SMTP_PASS=your-brevo-smtp-key
-MAIL_FROM=CollabHub <no-reply@brevo.com>
-APP_BASE_URL=https://your-netlify-site.netlify.app
-FRONTEND_URL=https://your-netlify-site.netlify.app
+MAIL_FROM=CollabHub <your-verified-sender@domain.com>
 
 # Domain & Roles
 ALLOWED_EMAIL_DOMAIN=cmrit.ac.in
@@ -144,15 +147,17 @@ GOOGLE_CLIENT_ID=
 TURNSTILE_SECRET_KEY=
 ```
 
-### Netlify Environment Variables
+### Vercel Environment Variables
 
 ```env
-VITE_API_BASE_URL=/api
+VITE_API_BASE_URL=https://your-render-service.onrender.com/api
 VITE_SOCKET_URL=https://your-render-service.onrender.com
 VITE_TURNSTILE_SITE_KEY=
 VITE_ENABLE_GOOGLE_AUTH=0
 VITE_GOOGLE_CLIENT_ID=
 ```
+
+> Note: Socket.IO connects **directly** to Render (`VITE_SOCKET_URL`) — websockets are not proxied through Vercel. The `/api/*` and `/socket.io/*` proxy rewrites in `vercel.json` are a fallback for same-origin setups.
 
 ## 📝 API Endpoints
 

@@ -21,15 +21,21 @@ const httpServer = createServer(app);
 const PORT = Number(process.env.PORT || 4000);
 // Normalize once: browsers serialize origins without trailing slashes, and
 // "https://site.com/" in FRONTEND_URL would break CORS string-matching.
+// FRONTEND_URL accepts a comma-separated list so multiple frontends
+// (e.g. old Netlify + new Vercel during migration) can share one backend.
 const stripTrailingSlash = (url) => String(url || '').trim().replace(/\/+$/, '');
-const FRONTEND_URL = stripTrailingSlash(process.env.FRONTEND_URL || 'http://localhost:5173');
+const FRONTEND_URLS = String(process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map(stripTrailingSlash)
+  .filter(Boolean);
+const FRONTEND_URL = FRONTEND_URLS[0];
 const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'replace-me-in-env';
 let serverInstance = null;
 let isShuttingDown = false;
 
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: FRONTEND_URLS,
   },
 });
 setSocketIo(io);
@@ -77,7 +83,7 @@ io.on('connection', (socket) => {
 });
 
 app.use(helmet());
-app.use(cors({ origin: FRONTEND_URL }));
+app.use(cors({ origin: FRONTEND_URLS }));
 app.use(express.json({ limit: '3mb' }));
 app.use(morgan('dev'));
 
