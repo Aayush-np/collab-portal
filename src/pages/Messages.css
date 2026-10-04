@@ -184,7 +184,27 @@
 .message-row.them .message-bubble { border-bottom-left-radius: 4px; }
 
 .message-text { font-size: 14px; color: var(--white); line-height: 1.5; }
-.message-time { font-size: 10px; margin-top: 4px; text-align: right; }
+.message-time { font-size: 10px; margin-top: 4px; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+
+/* Read receipts: single check = sent, double check (accent) = read */
+.msg-tick {
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+.msg-tick.read { color: var(--lime); }
+
+/* Inline empty state inside an opened chat with no messages yet */
+.chat-empty-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: auto;
+  padding: 24px 16px;
+  color: var(--gray-400);
+  font-size: 12.5px;
+  text-align: center;
+}
 
 .chat-input-row {
   padding: 14px 20px;

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Users, Lightbulb, MessageSquare, Star, TrendingUp, ArrowRight, Zap } from 'lucide-react';
-import { users, notifications } from '../data/mockData';
+import { users } from '../data/mockData';
 import { apiGet, apiPost } from '../services/api';
 import ProjectCard from '../components/ProjectCard';
 import { useModalBehavior } from '../hooks/useModalBehavior';
 import { toast } from '../utils/toast';
+import { timeAgo } from '../utils/time';
 import './Dashboard.css';
 
 const getGreeting = () => {
@@ -15,13 +16,13 @@ const getGreeting = () => {
   return 'Good evening';
 };
 
-export default function Dashboard({ setPage, currentUser, accessToken, withAccessRetry, setViewingUserId }) {
+export default function Dashboard({ setPage, currentUser, accessToken, withAccessRetry, setViewingUserId, notifications = [], notificationUnreadCount = 0 }) {
   const [recentProjects, setRecentProjects] = useState([]);
   const [liveCounts, setLiveCounts] = useState({ ideasPosted: currentUser.projectsPosted || 0, connections: currentUser.collaborations || 0 });
   const [projectStatusMap, setProjectStatusMap] = useState({});
   const [selectedProject, setSelectedProject] = useState(null);
   const topMatches = users.slice(0, 3);
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notificationUnreadCount;
   const topSkillProgress = (currentUser.skills || []).slice(0, 4).map((skill, i) => ({
     skill,
     pct: currentUser.skillLevels?.[skill] ?? Math.max(50, 80 - i * 5),
@@ -206,10 +207,10 @@ export default function Dashboard({ setPage, currentUser, accessToken, withAcces
               {notifications.length === 0 ? (
                 <div className="muted" style={{ fontSize: 12 }}>No recent activity.</div>
               ) : (
-                notifications.map(n => (
+                notifications.slice(0, 6).map(n => (
                   <div className={`notif-item-row ${!n.read ? 'unread' : ''}`} key={n.id}>
                     <div className="notif-text">{n.text}</div>
-                    <div className="notif-time muted">{n.time}</div>
+                    <div className="notif-time muted">{timeAgo(n.createdAt)}</div>
                   </div>
                 ))
               )}

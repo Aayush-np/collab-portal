@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { io } from 'socket.io-client';
 import { LayoutDashboard, Search, PlusCircle, MessageSquare, User, Shield, UserPlus } from 'lucide-react';
@@ -15,7 +15,9 @@ import AuthPage from './pages/AuthPage';
 import VerifyEmail from './pages/VerifyEmail';
 import OtherUserProfile from './pages/OtherUserProfile';
 import Toaster from './components/Toaster';
-import { apiGet, apiPost, apiPut } from './services/api';
+import { apiGet, apiPost, apiPut, apiDelete } from './services/api';
+import { openChatWithUser } from './utils/chatActions';
+import { toast } from './utils/toast';
 import { currentUser as initialCurrentUser } from './data/mockData';
 import './pages/Messages.css';
 
@@ -107,6 +109,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(initialCurrentUser);
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
   const [requestUnreadCount, setRequestUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [editingIdea, setEditingIdea] = useState(null);
   const [authUser, setAuthUser] = useState(() => {
     const raw = localStorage.getItem('authUser');
@@ -238,6 +242,58 @@ export default function App() {
     }
   };
 
+  // ── Notifications ────────────────────────────────────────────────
+  const pageRef = useRef(page);
+  pageRef.current = page;
+
+  const loadNotifications = async () => {
+    if (!accessToken) {
+      setNotifications([]);
+      setNotificationUnreadCount(0);
+      return;
+    }
+    try {
+      const result = await withAccessRetry((token) => apiGet('/notifications', token));
+      setNotifications(result.notifications || []);
+      setNotificationUnreadCount(result.unreadCount || 0);
+    } catch {
+      // Non-critical: leave current list untouched.
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, [accessToken]);
+
+  const markAllNotificationsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotificationUnreadCount(0);
+    try {
+      await withAccessRetry((token) => apiPost('/notifications/read', {}, token));
+    } catch {
+      // Optimistic state is fine even if the sync fails.
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    setNotifications([]);
+    setNotificationUnreadCount(0);
+    try {
+      await withAccessRetry((token) => apiDelete('/notifications', token));
+    } catch {
+      // Ignore — cleared locally anyway.
+    }
+  };
+
+  const openNotification = (n) => {
+    if (!n) return;
+    if (n.type === 'message' && n.actorUserId) {
+      openChatWithUser({ userId: n.actorUserId, setPage: handleNavigate });
+      return;
+    }
+    handleNavigate('requests');
+  };
+
   useEffect(() => {
     if (!accessToken) return;
 
@@ -261,6 +317,15 @@ export default function App() {
     socket.on('connection:request:new', refreshConnections);
     socket.on('connection:request:updated', refreshConnections);
     socket.on('connections:changed', refreshConnections);
+
+    socket.on('notification:new', (n) => {
+      if (!n?.id) return;
+      setNotifications((prev) => [n, ...prev.filter((p) => p.id !== n.id)].slice(0, 50));
+      setNotificationUnreadCount((count) => count + 1);
+      // Skip the toast while the user is already watching the live chat.
+      const liveChat = n.type === 'message' && pageRef.current === 'messages';
+      if (!liveChat) toast(n.text, 'info');
+    });
 
     return () => {
       socket.disconnect();
@@ -427,7 +492,17 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case 'dashboard':
-        return <Dashboard setPage={setPage} currentUser={currentUser} accessToken={accessToken} withAccessRetry={withAccessRetry} setViewingUserId={setViewingUserId} />;
+        return (
+          <Dashboard
+            setPage={setPage}
+            currentUser={currentUser}
+            accessToken={accessToken}
+            withAccessRetry={withAccessRetry}
+            setViewingUserId={setViewingUserId}
+            notifications={notifications}
+            notificationUnreadCount={notificationUnreadCount}
+          />
+        );
       case 'explore':
         return <Explore setPage={setPage} currentUser={currentUser} accessToken={accessToken} withAccessRetry={withAccessRetry} setViewingUserId={setViewingUserId} />;
       case 'post':
@@ -516,8 +591,11 @@ export default function App() {
           setPage={handleNavigate}
           currentUser={currentUser}
           onGlobalSearch={handleGlobalSearch}
-          messageUnreadCount={messageUnreadCount}
-          requestUnreadCount={requestUnreadCount}
+          notifications={notifications}
+          notificationUnreadCount={notificationUnreadCount}
+          onMarkNotificationsRead={markAllNotificationsRead}
+          onOpenNotification={openNotification}
+          onClearNotifications={clearAllNotifications}
           onLogout={() => { clearSession(); }}
         />
         <AnimatePresence mode="wait" initial={false}>

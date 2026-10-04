@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { Search, ArrowLeft, Plus, ArrowRight, Star, Trash2, Inbox, MessageSquare } from 'lucide-react';
+import { Search, ArrowLeft, Plus, ArrowRight, Star, Trash2, Inbox, MessageSquare, Check, CheckCheck } from 'lucide-react';
 import { apiDelete, apiGet, apiPost } from '../services/api';
 import './Messages.css';
 
@@ -424,10 +424,18 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
             </div>
 
             <div className="chat-messages">
-              {(active.messages || []).map((msg) => {
+              {(active.messages || []).length === 0 && (
+                <div className="chat-empty-inline">
+                  <MessageSquare size={22} />
+                  <div>No messages yet — say hi to {active.partner?.name || 'them'} 👋</div>
+                </div>
+              )}
+              {(active.messages || []).map((msg, index, messages) => {
                 const isMe = msg.from === currentUser.id;
+                // Read receipt: only on the sender's LAST message (WhatsApp-style).
+                const nextMsg = messages[index + 1];
+                const isLastOwn = isMe && (!nextMsg || nextMsg.from !== currentUser.id);
                 const partnerUnread = Number(active.unreadBy?.[active.partner?.id] || 0);
-                const tickText = isMe ? (partnerUnread === 0 ? '✓✓' : '✓') : '';
 
                 return (
                   <div key={msg.id} className={`message-row ${isMe ? 'me' : 'them'}`}>
@@ -440,7 +448,11 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
                       <div className="message-text">{msg.text}</div>
                       <div className="message-time muted">
                         {formatTime(msg.createdAt)}
-                        {tickText && <span style={{ marginLeft: 6 }}>{tickText}</span>}
+                        {isLastOwn && (
+                          partnerUnread === 0
+                            ? <CheckCheck size={13} className="msg-tick read" />
+                            : <Check size={13} className="msg-tick" />
+                        )}
                       </div>
                     </div>
                     {isMe && (

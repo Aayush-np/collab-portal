@@ -3,14 +3,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { requireAuth } from '../middleware/auth.js';
 import {
   findConnectionRequestById,
+  findConversationBetweenUsers,
   findLatestConnectionBetweenUsers,
   findProfileByUserId,
   findUserById,
   listAcceptedConnectionsForUser,
   listConnectionRequestsForUser,
   saveConnectionRequest,
+  upsertConversation,
 } from '../services/storage.js';
 import { emitToUsers } from '../services/socketHub.js';
+import { notifyUsers } from '../services/notificationService.js';
 
 const router = express.Router();
 router.use(requireAuth);
@@ -155,6 +158,14 @@ router.post('/request', async (req, res) => {
 
   const enriched = await enrichRequest(request, fromUserId);
   await emitConnectionChange({ request, event: 'connection:request:new', actorUserId: fromUserId });
+
+  const fromUser = await findUserById(fromUserId);
+  await notifyUsers([toUserId], {
+    type: 'connection',
+    text: `${fromUser?.name || 'Someone'} sent you a connection request`,
+    actorUserId: fromUserId,
+  });
+
   return res.status(201).json({ request: enriched });
 });
 
@@ -181,6 +192,30 @@ router.post('/requests/:id/accept', async (req, res) => {
 
   const enriched = await enrichRequest(updated, req.auth.userId);
   await emitConnectionChange({ request: updated, event: 'connection:request:updated', actorUserId: req.auth.userId });
+
+  // New connection: create an empty chat so both users can start messaging
+  // straight away from the Messages page.
+  const existingConversation = await findConversationBetweenUsers(updated.fromUserId, updated.toUserId);
+  if (!existingConversation) {
+    const now = new Date().toISOString();
+    await upsertConversation({
+      id: uuidv4(),
+      participants: [updated.fromUserId, updated.toUserId],
+      messages: [],
+      unreadBy: { [updated.fromUserId]: 0, [updated.toUserId]: 0 },
+      lastMessage: 'New connection — say hi 👋',
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  const acceptor = await findUserById(req.auth.userId);
+  await notifyUsers([updated.fromUserId], {
+    type: 'connection',
+    text: `${acceptor?.name || 'Someone'} accepted your connection request`,
+    actorUserId: req.auth.userId,
+  });
+
   return res.json({ request: enriched });
 });
 
@@ -202,6 +237,14 @@ router.post('/requests/:id/reject', async (req, res) => {
 
   const enriched = await enrichRequest(updated, req.auth.userId);
   await emitConnectionChange({ request: updated, event: 'connection:request:updated', actorUserId: req.auth.userId });
+
+  const rejector = await findUserById(req.auth.userId);
+  await notifyUsers([updated.fromUserId], {
+    type: 'connection',
+    text: `${rejector?.name || 'Someone'} declined your connection request`,
+    actorUserId: req.auth.userId,
+  });
+
   return res.json({ request: enriched });
 });
 

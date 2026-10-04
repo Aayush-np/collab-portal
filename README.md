@@ -6,10 +6,12 @@ A full-stack collaboration platform for CMRIT students to discover, post, and co
 
 - **Project & Internship Discovery** — Post and discover collaboration opportunities with skill-based filtering
 - **Smart Matching** — Find teammates based on skills, interests, and compatibility scores
-- **Real-time Messaging** — Socket.IO powered chat with typing indicators, read receipts, and favorites
+- **Real-time Messaging** — Socket.IO powered chat with typing indicators, read receipts, favorites, and clean delivery ticks
+- **Auto Chat on Connect** — Accepting a connection instantly creates a chat, so you can message new connections right away
+- **Real-time Notifications** — Toast + bell menu alerts for new messages, connection requests/accepts, and project requests (stored server-side, mark-as-read, clear-all)
 - **Connection System** — Send/accept connection requests, manage project applications
-- **Email Verification** — Secure account creation with email verification flow (Brevo SMTP)
-- **Password Reset** — Secure token-based password recovery via email
+- **Email Verification** — Secure account creation with email verification flow (Brevo API), plus resend link option
+- **Password Reset** — Secure token-based recovery via email (token hidden from UI and URL)
 - **Role-based Access** — Superadmin, Editor, Support, and User roles with granular permissions
 - **Admin Dashboard** — User management, audit logs, content moderation
 - **Responsive Design** — Works seamlessly on desktop, tablet, and mobile
@@ -165,6 +167,7 @@ VITE_GOOGLE_CLIENT_ID=
 - `POST /api/auth/register` — Register with email verification
 - `POST /api/auth/login` — Login (requires verified email)
 - `POST /api/auth/verify-email` — Verify email token
+- `POST /api/auth/resend-verification` — Resend verification email
 - `POST /api/auth/forgot-password` — Request password reset
 - `POST /api/auth/reset-password` — Reset password with token
 - `POST /api/auth/refresh` — Refresh access token
@@ -186,8 +189,13 @@ VITE_GOOGLE_CLIENT_ID=
 ### Connections
 - `GET /api/connections/summary` — Connection counts
 - `POST /api/connections/request` — Send connection request
-- `POST /api/connections/requests/:id/accept` — Accept request
+- `POST /api/connections/requests/:id/accept` — Accept request (also creates a chat between both users)
 - `POST /api/connections/requests/:id/reject` — Reject request
+
+### Notifications
+- `GET /api/notifications` — List notifications + unread count
+- `POST /api/notifications/read` — Mark all as read
+- `DELETE /api/notifications` — Clear all notifications
 
 ### Admin (requires admin role)
 - `GET /api/admin/overview` — Stats
@@ -202,10 +210,26 @@ VITE_GOOGLE_CLIENT_ID=
 ```bash
 # Run build to check for errors
 npm run build
-
-# Run lint/type checks (if configured)
-# npm run lint
 ```
+
+## 🔧 Maintenance
+
+### Reset database + seed verified superadmin
+
+Wipes **all** data (users, chats, ideas, notifications, tokens) and creates one
+verified superadmin account. Works against MongoDB (production) or local JSON:
+
+```bash
+# Production (copy MONGODB_URI from Render → Environment)
+$env:DB_PROVIDER="mongo"
+$env:MONGODB_URI="mongodb+srv://..."
+node backend/src/scripts/resetAndSeed.js admin@cmrit.ac.in YourPassword123 "Admin Name"
+
+# Local JSON storage
+node backend/src/scripts/resetAndSeed.js admin@cmrit.ac.in YourPassword123 "Admin Name"
+```
+
+The script shows the target database and asks for confirmation before deleting anything (add `--yes` to skip).
 
 ## 📄 License
 

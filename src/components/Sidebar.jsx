@@ -1,15 +1,13 @@
 import {
   LayoutDashboard, Search, PlusCircle, MessageSquare,
-  User, Bell, LogOut, Zap, ChevronRight, Shield, UserPlus
+  User, LogOut, Zap, ChevronRight, Shield, UserPlus
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
-import { notifications } from '../data/mockData';
 import './Sidebar.css';
 
 export default function Sidebar({ page, setPage, currentUser, isAdmin, onLogout, messageUnreadCount = 0, requestUnreadCount = 0 }) {
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const unread = notifications.filter(n => !n.read).length;
   const firstName = (currentUser?.name || 'User').split(' ')[0];
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -60,13 +58,6 @@ export default function Sidebar({ page, setPage, currentUser, isAdmin, onLogout,
       </nav>
 
       <div className="divider" />
-
-      {/* Notifications quick link */}
-      <button className="nav-item notif-item" onClick={() => {}}>
-        <Bell size={18} />
-        <span>Notifications</span>
-        {unread > 0 && <span className="nav-badge">{unread}</span>}
-      </button>
 
       {/* User card at bottom */}
       <div className="sidebar-user">

@@ -24,6 +24,8 @@ const ensureJsonDb = () => {
       profiles: {},
       refreshTokens: [],
       passwordResetTokens: [],
+      verificationTokens: [],
+      notifications: [],
       conversations: [],
       connectionRequests: [],
       projectRequests: [],
@@ -42,6 +44,8 @@ const readJson = () => {
     profiles: parsed.profiles || {},
     refreshTokens: parsed.refreshTokens || [],
     passwordResetTokens: parsed.passwordResetTokens || [],
+    verificationTokens: parsed.verificationTokens || [],
+    notifications: parsed.notifications || [],
     conversations: parsed.conversations || [],
     connectionRequests: parsed.connectionRequests || [],
     projectRequests: parsed.projectRequests || [],
@@ -72,6 +76,9 @@ const mongo = async () => {
       mongoDb.collection('refreshTokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       mongoDb.collection('passwordResetTokens').createIndex({ tokenHash: 1 }, { unique: true }),
       mongoDb.collection('passwordResetTokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+      mongoDb.collection('verificationTokens').createIndex({ tokenHash: 1 }, { unique: true }),
+      mongoDb.collection('verificationTokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+      mongoDb.collection('notifications').createIndex({ userId: 1, createdAt: -1 }),
       mongoDb.collection('conversations').createIndex({ id: 1 }, { unique: true }),
       mongoDb.collection('conversations').createIndex({ participants: 1 }),
       mongoDb.collection('connectionRequests').createIndex({ id: 1 }, { unique: true }),
@@ -781,6 +788,76 @@ export const listAuditLogs = async ({ page = 1, limit = 20 } = {}) => {
     page: safePage,
     limit: safeLimit,
   };
+};
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────────
+
+export const createNotification = async ({ id, userId, type, text, actorUserId, createdAt, read = false }) => {
+  const payload = {
+    id,
+    userId,
+    type,
+    text,
+    actorUserId: actorUserId || null,
+    createdAt,
+    read: Boolean(read),
+  };
+
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    await db.collection('notifications').insertOne(payload);
+    return payload;
+  }
+
+  const db = readJson();
+  db.notifications = db.notifications || [];
+  db.notifications.push(payload);
+  db.notifications = db.notifications.slice(-500); // cap local storage growth
+  writeJson(db);
+  return payload;
+};
+
+export const listNotificationsForUser = async (userId, { limit = 50 } = {}) => {
+  const safeLimit = Math.max(1, Math.min(100, Number(limit) || 50));
+
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    return db.collection('notifications')
+      .find({ userId }, { projection: { _id: 0 } })
+      .sort({ createdAt: -1 })
+      .limit(safeLimit)
+      .toArray();
+  }
+
+  const db = readJson();
+  return (db.notifications || [])
+    .filter((n) => n.userId === userId)
+    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+    .slice(0, safeLimit);
+};
+
+export const markNotificationsReadForUser = async (userId) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    await db.collection('notifications').updateMany({ userId, read: false }, { $set: { read: true } });
+    return;
+  }
+
+  const db = readJson();
+  db.notifications = (db.notifications || []).map((n) => (n.userId === userId ? { ...n, read: true } : n));
+  writeJson(db);
+};
+
+export const deleteNotificationsForUser = async (userId) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    await db.collection('notifications').deleteMany({ userId });
+    return;
+  }
+
+  const db = readJson();
+  db.notifications = (db.notifications || []).filter((n) => n.userId !== userId);
+  writeJson(db);
 };
 
 export const saveIdea = async (idea) => {

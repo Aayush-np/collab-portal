@@ -21,17 +21,9 @@ export const currentUser = {
   matchScore: null,
 };
 
-// ── PROJECTS / IDEAS ─────────────────────────────────────────
-export const projects = [];
-
 // ── USERS / COLLABORATORS ────────────────────────────────────
+// Empty by default — real people come from the API.
 export const users = [];
-
-// ── MESSAGES ─────────────────────────────────────────────────
-export const conversations = [];
-
-// ── NOTIFICATIONS ─────────────────────────────────────────────
-export const notifications = [];
 
 export const allSkills = [
   "React.js","Node.js","Python","Java","C++","MongoDB","MySQL","Firebase",

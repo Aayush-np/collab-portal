@@ -12,6 +12,7 @@ import ideaRoutes from './routes/ideaRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import connectionRoutes from './routes/connectionRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import { closeStorage, getStorageProvider, initializeStorage, findUserById, findConversationById } from './services/storage.js';
 import { setSocketIo } from './services/socketHub.js';
 import { emitToUsers } from './services/socketHub.js';
@@ -22,7 +23,7 @@ const PORT = Number(process.env.PORT || 4000);
 // Normalize once: browsers serialize origins without trailing slashes, and
 // "https://site.com/" in FRONTEND_URL would break CORS string-matching.
 // FRONTEND_URL accepts a comma-separated list so multiple frontends
-// (e.g. old Netlify + new Vercel during migration) can share one backend.
+// (e.g. old + new domains during a hosting migration) can share one backend.
 const stripTrailingSlash = (url) => String(url || '').trim().replace(/\/+$/, '');
 const FRONTEND_URLS = String(process.env.FRONTEND_URL || 'http://localhost:5173')
   .split(',')
@@ -96,6 +97,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/connections', connectionRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/user', userRoutes);
 
 app.use((err, _req, res, _next) => {

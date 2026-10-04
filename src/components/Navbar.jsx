@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Search, LogOut } from 'lucide-react';
-import { notifications } from '../data/mockData';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, Search, LogOut, MessageSquare, UserPlus, FolderGit2 } from 'lucide-react';
 import { openChatWithUser } from '../utils/chatActions';
+import { timeAgo } from '../utils/time';
 import './Navbar.css';
 
 const pageTitles = {
@@ -14,7 +14,24 @@ const pageTitles = {
   admin: 'Admin Control Center',
 };
 
-export default function Navbar({ page, setPage, currentUser, onGlobalSearch, messageUnreadCount = 0, requestUnreadCount = 0, onLogout }) {
+const NOTIF_ICONS = {
+  message: MessageSquare,
+  connection: UserPlus,
+  project: FolderGit2,
+};
+
+export default function Navbar({
+  page,
+  setPage,
+  currentUser,
+  onGlobalSearch,
+  notifications = [],
+  notificationUnreadCount = 0,
+  onMarkNotificationsRead,
+  onOpenNotification,
+  onClearNotifications,
+  onLogout,
+}) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const notifRef = useRef(null);
@@ -23,35 +40,7 @@ export default function Navbar({ page, setPage, currentUser, onGlobalSearch, mes
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
 
-  const notificationItems = useMemo(() => {
-    const base = (notifications || []).map((n) => ({
-      id: n.id,
-      text: n.text,
-      time: n.time,
-      read: Boolean(n.read),
-    }));
-
-    if (messageUnreadCount > 0) {
-      base.unshift({
-        id: 'messages-unread',
-        text: `You have ${messageUnreadCount} unread message${messageUnreadCount > 1 ? 's' : ''}`,
-        time: 'Now',
-        read: false,
-      });
-    }
-
-    if (requestUnreadCount > 0) {
-      base.unshift({
-        id: 'requests-unread',
-        text: `You have ${requestUnreadCount} new connection request${requestUnreadCount > 1 ? 's' : ''}`,
-        time: 'Now',
-        read: false,
-      });
-    }
-    return base;
-  }, [messageUnreadCount, requestUnreadCount]);
-
-  const unread = notificationItems.filter((n) => !n.read).length;
+  const unread = notificationUnreadCount;
 
   useEffect(() => {
     const q = query.trim();
@@ -113,19 +102,16 @@ export default function Navbar({ page, setPage, currentUser, onGlobalSearch, mes
     openUserResult(result.id);
   };
 
+  const toggleNotifications = () => {
+    const opening = !notifOpen;
+    setNotifOpen(opening);
+    // Opening the panel marks everything as seen (standard bell behavior).
+    if (opening && unread > 0) onMarkNotificationsRead?.();
+  };
+
   const openNotification = (item) => {
-    if (!item?.id) return;
-
-    if (item.id === 'messages-unread') {
-      setPage('messages');
-      setNotifOpen(false);
-      return;
-    }
-
-    if (item.id === 'requests-unread') {
-      setPage('requests');
-      setNotifOpen(false);
-    }
+    setNotifOpen(false);
+    onOpenNotification?.(item);
   };
 
   return (
@@ -169,28 +155,41 @@ export default function Navbar({ page, setPage, currentUser, onGlobalSearch, mes
       </div>
       <div className="navbar-right">
         <div className="navbar-notif-wrap" ref={notifRef}>
-          <button className="navbar-icon-btn" onClick={() => setNotifOpen((v) => !v)}>
+          <button className="navbar-icon-btn" onClick={toggleNotifications} title="Notifications">
             <Bell size={18} />
-            {unread > 0 && <span className="navbar-notif-dot">{unread}</span>}
+            {unread > 0 && <span className="navbar-notif-dot">{unread > 99 ? '99+' : unread}</span>}
           </button>
           {notifOpen && (
             <div className="navbar-notif-panel">
-              <div className="navbar-notif-title">Notifications</div>
-              {notificationItems.length === 0 ? (
+              <div className="navbar-notif-title">
+                Notifications
+                {notifications.length > 0 && (
+                  <button className="navbar-notif-clear" onClick={() => onClearNotifications?.()}>
+                    Clear all
+                  </button>
+                )}
+              </div>
+              {notifications.length === 0 ? (
                 <div className="navbar-notif-empty">No notifications yet.</div>
               ) : (
                 <div className="navbar-notif-list">
-                  {notificationItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`navbar-notif-item ${item.read ? '' : 'unread'} navbar-notif-item-btn`}
-                      onClick={() => openNotification(item)}
-                    >
-                      <div className="navbar-notif-text">{item.text}</div>
-                      <div className="navbar-notif-time">{item.time || 'Now'}</div>
-                    </button>
-                  ))}
+                  {notifications.map((item) => {
+                    const Icon = NOTIF_ICONS[item.type] || Bell;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`navbar-notif-item ${item.read ? '' : 'unread'} navbar-notif-item-btn`}
+                        onClick={() => openNotification(item)}
+                      >
+                        <span className="navbar-notif-icon">
+                          <Icon size={14} />
+                        </span>
+                        <span className="navbar-notif-text">{item.text}</span>
+                        <span className="navbar-notif-time">{timeAgo(item.createdAt)}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

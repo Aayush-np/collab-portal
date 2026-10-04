@@ -16,6 +16,7 @@ import {
 } from '../services/storage.js';
 import { addAuditLog } from '../services/storage.js';
 import { emitToUsers } from '../services/socketHub.js';
+import { notifyUsers } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -277,6 +278,13 @@ router.post('/:id/request', async (req, res) => {
 
   emitToUsers([idea.authorId], 'project:request:new', { ideaId: idea.id, requestId: request.id });
 
+  const applicant = await findUserById(req.auth.userId);
+  await notifyUsers([idea.authorId], {
+    type: 'project',
+    text: `${applicant?.name || 'Someone'} requested to join "${idea.title}"`,
+    actorUserId: req.auth.userId,
+  });
+
   return res.status(201).json({ request });
 });
 
@@ -321,6 +329,13 @@ router.post('/requests/:id/accept', async (req, res) => {
 
   emitToUsers([projectRequest.fromUserId, projectRequest.toUserId], 'project:request:updated', { requestId: updatedRequest.id, status: 'accepted', ideaId: idea.id });
 
+  const owner = await findUserById(req.auth.userId);
+  await notifyUsers([projectRequest.fromUserId], {
+    type: 'project',
+    text: `${owner?.name || 'Someone'} accepted your request to join "${idea.title}"`,
+    actorUserId: req.auth.userId,
+  });
+
   return res.json({ request: updatedRequest, idea: await mapIdeaForClient(updatedIdea) });
 });
 
@@ -343,6 +358,13 @@ router.post('/requests/:id/reject', async (req, res) => {
   });
 
   emitToUsers([projectRequest.fromUserId, projectRequest.toUserId], 'project:request:updated', { requestId: updatedRequest.id, status: 'rejected', ideaId: projectRequest.ideaId });
+
+  const owner = await findUserById(req.auth.userId);
+  await notifyUsers([projectRequest.fromUserId], {
+    type: 'project',
+    text: `${owner?.name || 'Someone'} declined your request to join "${idea.title}"`,
+    actorUserId: req.auth.userId,
+  });
 
   return res.json({ request: updatedRequest });
 });

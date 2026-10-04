@@ -12,6 +12,7 @@ import {
   upsertConversation,
 } from '../services/storage.js';
 import { emitToUsers } from '../services/socketHub.js';
+import { notifyUsers } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -151,6 +152,14 @@ router.post('/send', async (req, res) => {
     conversationId: next.id,
     message,
     updatedAt: next.updatedAt,
+  });
+
+  const recipients = next.participants.filter((id) => id !== req.auth.userId);
+  const sender = await findUserById(req.auth.userId);
+  await notifyUsers(recipients, {
+    type: 'message',
+    text: `New message from ${sender?.name || 'a user'}`,
+    actorUserId: req.auth.userId,
   });
 
   return res.status(201).json({

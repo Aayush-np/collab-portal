@@ -187,7 +187,24 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--off-white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
+
+.navbar-notif-clear {
+  border: none;
+  background: transparent;
+  color: var(--gray-300);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 6px);
+  transition: color var(--transition);
+}
+.navbar-notif-clear:hover { color: var(--danger); }
 
 .navbar-notif-empty {
   padding: 12px;
@@ -211,6 +228,9 @@
   border: none;
   background: transparent;
   cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
 }
 
 .navbar-notif-item-btn:hover {
@@ -221,15 +241,31 @@
   background: rgba(99,102,241, 0.06);
 }
 
+.navbar-notif-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(99,102,241, 0.16);
+  color: var(--off-white);
+  margin-top: 1px;
+}
+
 .navbar-notif-text {
   font-size: 12px;
   color: var(--white);
+  flex: 1;
+  line-height: 1.4;
 }
 
 .navbar-notif-time {
-  margin-top: 3px;
   font-size: 11px;
   color: var(--gray-300);
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .navbar-user {
