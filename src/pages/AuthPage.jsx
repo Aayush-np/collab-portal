@@ -362,15 +362,21 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
 
         {mode === 'reset' && (
           <form className="auth-form" onSubmit={handleReset}>
-            <div className="form-group">
-              <label>Reset Token</label>
-              <input
-                value={resetForm.token}
-                onChange={(e) => setResetForm((p) => ({ ...p, token: e.target.value }))}
-                placeholder="Paste token from email"
-                required
-              />
-            </div>
+            {resetForm.token ? (
+              <p className="auth-info">Reset link verified. Choose a new password below.</p>
+            ) : (
+              <div className="form-group">
+                <label>Reset Token</label>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={resetForm.token}
+                  onChange={(e) => setResetForm((p) => ({ ...p, token: e.target.value }))}
+                  placeholder="Paste token from email"
+                  required
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label>New Password</label>
