@@ -2,6 +2,12 @@ import nodemailer from 'nodemailer';
 
 let transporter;
 
+// Avoid "https://site.com//?resetToken=..." double slashes if APP_BASE_URL ends with "/".
+const getAppBaseUrl = () =>
+  String(process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173')
+    .trim()
+    .replace(/\/+$/, '');
+
 const buildTransport = async () => {
   if (transporter) return transporter;
 
@@ -26,7 +32,7 @@ const buildTransport = async () => {
 };
 
 export const sendResetEmail = async ({ toEmail, resetToken }) => {
-  const appUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+  const appUrl = getAppBaseUrl();
   const resetLink = `${appUrl}/?resetToken=${encodeURIComponent(resetToken)}`;
   const tx = await buildTransport();
 
@@ -46,7 +52,7 @@ export const sendResetEmail = async ({ toEmail, resetToken }) => {
 };
 
 export const sendVerificationEmail = async ({ toEmail, verificationToken, name }) => {
-  const appUrl = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+  const appUrl = getAppBaseUrl();
   const verifyLink = `${appUrl}/verify-email?token=${encodeURIComponent(verificationToken)}`;
   const tx = await buildTransport();
 

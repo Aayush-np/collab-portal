@@ -19,7 +19,10 @@ import { emitToUsers } from './services/socketHub.js';
 const app = express();
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT || 4000);
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+// Normalize once: browsers serialize origins without trailing slashes, and
+// "https://site.com/" in FRONTEND_URL would break CORS string-matching.
+const stripTrailingSlash = (url) => String(url || '').trim().replace(/\/+$/, '');
+const FRONTEND_URL = stripTrailingSlash(process.env.FRONTEND_URL || 'http://localhost:5173');
 const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'replace-me-in-env';
 let serverInstance = null;
 let isShuttingDown = false;
