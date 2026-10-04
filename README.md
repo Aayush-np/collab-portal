@@ -8,7 +8,7 @@ A full-stack collaboration platform for CMRIT students to discover, post, and co
 - **Smart Matching** — Find teammates based on skills, interests, and compatibility scores
 - **Real-time Messaging** — Socket.IO powered chat with typing indicators, read receipts, and favorites
 - **Connection System** — Send/accept connection requests, manage project applications
-- **Email Verification** — Secure account creation with email verification flow
+- **Email Verification** — Secure account creation with email verification flow (Brevo SMTP)
 - **Password Reset** — Secure token-based password recovery via email
 - **Role-based Access** — Superadmin, Editor, Support, and User roles with granular permissions
 - **Admin Dashboard** — User management, audit logs, content moderation
@@ -93,16 +93,66 @@ VITE_SOCKET_URL=http://localhost:4000
 | **Netlify** | Frontend hosting | Free |
 | **Render** | Backend API + Socket.IO | Free (750 hrs/mo) |
 | **MongoDB Atlas** | Database | Free (512 MB) |
+| **Brevo** | Transactional email (SMTP/API) | Free (300/day) |
 
 ### Deploy Steps
 
 1. **Push to GitHub** (this repo)
 2. **MongoDB Atlas** → Create cluster → Get connection string
-3. **Render** → New Web Service → Connect GitHub repo → Add env vars → Deploy
-4. **Netlify** → Import from GitHub → Build: `npm run build`, Publish: `dist` → Add env vars
-5. **Update Render** → Set `FRONTEND_URL` and `APP_BASE_URL` to your Netlify URL
+3. **Brevo** → Create account → Get SMTP credentials → Add sender (e.g., `no-reply@brevo.com`)
+4. **Render** → New Web Service → Connect GitHub repo → Add env vars → Deploy
+5. **Netlify** → Import from GitHub → Build: `npm run build`, Publish: `dist` → Add env vars
+6. **Update Render** → Set `FRONTEND_URL` and `APP_BASE_URL` to your Netlify URL
 
 See the full guide in `docs/DEPLOYMENT.md` (if present) or the original deployment docs.
+
+### Required Render Environment Variables
+
+```env
+# Backend
+PORT=4000
+NODE_ENV=production
+DB_PROVIDER=mongo
+MONGODB_URI=mongodb+srv://...
+MONGODB_DB_NAME=collab_portal
+JWT_SECRET=your-strong-random-secret
+REFRESH_TOKEN_SECRET=your-other-strong-random-secret
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_DAYS=30
+RESET_TOKEN_EXPIRES_MINUTES=20
+
+# Email (Brevo SMTP)
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_SECURE=0
+SMTP_USER=your-brevo-login-email
+SMTP_PASS=your-brevo-smtp-key
+MAIL_FROM=CollabHub <no-reply@brevo.com>
+APP_BASE_URL=https://your-netlify-site.netlify.app
+FRONTEND_URL=https://your-netlify-site.netlify.app
+
+# Domain & Roles
+ALLOWED_EMAIL_DOMAIN=cmrit.ac.in
+SUPERADMIN_EMAILS=your-admin@cmrit.ac.in
+EDITOR_ADMIN_EMAILS=
+SUPPORT_ADMIN_EMAILS=
+ADMIN_EMAILS=
+
+# Optional
+ENABLE_GOOGLE_AUTH=0
+GOOGLE_CLIENT_ID=
+TURNSTILE_SECRET_KEY=
+```
+
+### Netlify Environment Variables
+
+```env
+VITE_API_BASE_URL=/api
+VITE_SOCKET_URL=https://your-render-service.onrender.com
+VITE_TURNSTILE_SITE_KEY=
+VITE_ENABLE_GOOGLE_AUTH=0
+VITE_GOOGLE_CLIENT_ID=
+```
 
 ## 📝 API Endpoints
 
