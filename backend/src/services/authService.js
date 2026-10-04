@@ -371,6 +371,30 @@ export const verifyEmail = async ({ token }) => {
   return { ok: true };
 };
 
+export const resendVerificationEmail = async ({ email }) => {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const user = await findUserByEmail(normalizedEmail);
+
+  // Never reveal whether the account exists or is already verified.
+  if (!user || user.emailVerified !== false) {
+    return { ok: true };
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  await createVerificationToken({
+    userId: user.id,
+    tokenHash: hashToken(verificationToken),
+    expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000).toISOString(),
+  });
+
+  // Fire-and-forget: don't block the response on email delivery.
+  sendVerificationEmail({ toEmail: user.email, verificationToken, name: user.name }).catch((err) => {
+    console.error('Failed to resend verification email:', err);
+  });
+
+  return { ok: true };
+};
+
 export const getSessionForUser = (userId) => {
   return Promise.resolve().then(async () => {
     const user = await findUserByIdFromStorage(userId);

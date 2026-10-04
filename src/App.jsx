@@ -470,6 +470,12 @@ export default function App() {
   };
 
   if (!accessToken && !refreshToken) {
+    // The verify-email screen must render even while logged out:
+    // - right after registering (page state), and
+    // - when opening the link from the verification email (URL path).
+    if (page === 'verify-email' || window.location.pathname.startsWith('/verify-email')) {
+      return <VerifyEmail />;
+    }
     return (
       <AuthPage
         onLogin={handleLogin}

@@ -7,6 +7,7 @@ import {
   refreshSession,
   registerWithVerification,
   requestPasswordReset,
+  resendVerificationEmail,
   resetPasswordWithToken,
   verifyEmail,
 } from '../services/authService.js';
@@ -78,6 +79,20 @@ router.post('/verify-email', async (req, res) => {
     return res.json(result);
   } catch (error) {
     return res.status(400).json({ error: error.message || 'Verification failed.' });
+  }
+});
+
+router.post('/resend-verification', authLimiter, async (req, res) => {
+  const { email } = req.body || {};
+  if (!validateEmail(email)) {
+    return res.status(400).json({ error: 'Please provide a valid email.' });
+  }
+
+  try {
+    const result = await resendVerificationEmail({ email });
+    return res.json(result);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Could not resend verification email.' });
   }
 });
 

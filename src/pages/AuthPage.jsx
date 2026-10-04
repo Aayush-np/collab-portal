@@ -75,7 +75,7 @@ const useGoogleAuth = ({ enabled, onCredential }) => {
 export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotPassword, onResetPassword, loading }) {
   const [mode, setMode] = useState('login');
   const [forgotEmail, setForgotEmail] = useState('');
-  const [resetForm, setResetForm] = useState({ token: '', password: '' });
+  const [resetForm, setResetForm] = useState({ token: '', password: '', confirmPassword: '' });
   const [info, setInfo] = useState('');
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
@@ -84,6 +84,7 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
     register: false,
     registerConfirm: false,
     reset: false,
+    resetConfirm: false,
   });
   const turnstileContainerRef = useRef(null);
   const turnstileWidgetRef = useRef(null);
@@ -140,11 +141,16 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
   });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const resetToken = params.get('resetToken');
+    // Reset links now use the URL fragment (#resetToken=...) so the token never
+    // reaches server logs. Older emails used ?resetToken= — support both.
+    const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const fromQuery = new URLSearchParams(window.location.search);
+    const resetToken = fromHash.get('resetToken') || fromQuery.get('resetToken');
     if (resetToken) {
       setMode('reset');
       setResetForm((prev) => ({ ...prev, token: resetToken }));
+      // Hide the token from the address bar and browser history.
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -198,6 +204,10 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
     e.preventDefault();
     setError('');
     setInfo('');
+    if (resetForm.password !== resetForm.confirmPassword) {
+      setError('New password and confirm password must match.');
+      return;
+    }
     try {
       await onResetPassword({ token: resetForm.token, newPassword: resetForm.password });
       setInfo('Password updated. You can sign in now.');
@@ -396,6 +406,28 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
                   aria-label="Toggle new password visibility"
                 >
                   {showPassword.reset ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Confirm New Password</label>
+              <div className="password-input-wrap">
+                <input
+                  type={showPassword.resetConfirm ? 'text' : 'password'}
+                  minLength={6}
+                  value={resetForm.confirmPassword}
+                  onChange={(e) => setResetForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                  placeholder="Retype new password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword((p) => ({ ...p, resetConfirm: !p.resetConfirm }))}
+                  aria-label="Toggle confirm password visibility"
+                >
+                  {showPassword.resetConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>

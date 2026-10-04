@@ -95,7 +95,7 @@ const sendEmailOrLog = async ({ toEmail, subject, textContent, htmlContent, logL
 
 export const sendResetEmail = async ({ toEmail, resetToken }) => {
   const appUrl = getAppBaseUrl();
-  const resetLink = `${appUrl}/?resetToken=${encodeURIComponent(resetToken)}`;
+  const resetLink = `${appUrl}/#resetToken=${encodeURIComponent(resetToken)}`;
   await sendEmailOrLog({
     toEmail,
     subject: 'CollabHub Password Reset',
@@ -110,7 +110,7 @@ export const sendResetEmail = async ({ toEmail, resetToken }) => {
 
 export const sendVerificationEmail = async ({ toEmail, verificationToken, name }) => {
   const appUrl = getAppBaseUrl();
-  const verifyLink = `${appUrl}/verify-email?token=${encodeURIComponent(verificationToken)}`;
+  const verifyLink = `${appUrl}/verify-email#token=${encodeURIComponent(verificationToken)}`;
   await sendEmailOrLog({
     toEmail,
     subject: 'Verify your CollabHub account',
