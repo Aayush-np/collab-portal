@@ -158,3 +158,29 @@
   .requests-grid, .requests-grid-3 { grid-template-columns: 1fr; }
   .request-item { flex-direction: column; align-items: flex-start; }
 }
+
+/* -- Motion & refinement -------------------------------- */
+.request-item {
+  animation: riseIn 0.4s var(--ease-out) both;
+  transition: background 0.16s var(--ease-out), border-color 0.16s var(--ease-out), transform 0.16s var(--ease-out);
+}
+.request-item:hover { border-color: var(--navy-500); transform: translateX(2px); }
+.request-item:nth-child(2) { animation-delay: 0.05s; }
+.request-item:nth-child(3) { animation-delay: 0.1s; }
+.request-item:nth-child(4) { animation-delay: 0.15s; }
+.request-item:nth-child(n+5) { animation-delay: 0.2s; }
+
+.requests-title-row h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--gray-400);
+}
+
+.requests-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-500);
+}

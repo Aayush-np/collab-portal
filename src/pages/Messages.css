@@ -82,11 +82,12 @@
   padding: 12px 16px;
   cursor: pointer;
   border-left: 3px solid transparent;
-  transition: all var(--transition);
+  animation: riseIn 0.4s var(--ease-out) both;
+  transition: background 0.16s var(--ease-out), border-color 0.16s var(--ease-out), transform 0.16s var(--ease-out);
 }
-.convo-item:hover { background: var(--navy-700); }
+.convo-item:hover { background: var(--navy-750); transform: translateX(2px); }
 .convo-item.active {
-  background: rgba(251,191,36,0.07);
+  background: rgba(245,185,36,0.07);
   border-left-color: var(--lime);
 }
 
@@ -150,6 +151,7 @@
   display: flex;
   align-items: flex-end;
   gap: 8px;
+  animation: msgIn 0.32s var(--ease-out) both;
 }
 .message-row.me { flex-direction: row-reverse; }
 
@@ -170,15 +172,15 @@
 
 .message-bubble {
   max-width: 68%;
-  background: var(--navy-700);
+  background: var(--navy-750);
   border: 1px solid var(--navy-600);
   border-radius: var(--radius-lg);
   padding: 10px 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm), var(--edge-light);
 }
 .message-row.me .message-bubble {
-  background: rgba(251,191,36,0.14);
-  border-color: rgba(251,191,36,0.3);
+  background: linear-gradient(180deg, rgba(245,185,36,0.16), rgba(245,185,36,0.11));
+  border-color: rgba(245,185,36,0.32);
   border-bottom-right-radius: 4px;
 }
 .message-row.them .message-bubble { border-bottom-left-radius: 4px; }

@@ -24,8 +24,8 @@
 .admin-stat-card .stat-icon {
   width: 34px;
   height: 34px;
-  background: rgba(251,191,36, 0.12);
-  border: 1px solid rgba(251,191,36, 0.25);
+  background: rgba(245,185,66, 0.12);
+  border: 1px solid rgba(245,185,66, 0.25);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -93,7 +93,7 @@
 }
 
 .admin-user-item.active {
-  border-color: rgba(251,191,36, 0.45);
+  border-color: rgba(245,185,66, 0.45);
   box-shadow: var(--shadow-lime);
 }
 

@@ -7,7 +7,7 @@
 
 .profile-cover {
   height: 128px;
-  background: linear-gradient(135deg, var(--navy-600) 0%, var(--navy-500) 40%, rgba(251,191,36,0.16) 100%);
+  background: linear-gradient(135deg, var(--navy-600) 0%, var(--navy-500) 40%, rgba(245,185,66,0.16) 100%);
   position: relative;
   background-size: cover;
   background-position: center;
@@ -88,7 +88,7 @@
 }
 
 .avatar-upload-btn:hover {
-  border-color: rgba(251,191,36, 0.6);
+  border-color: rgba(245,185,66, 0.6);
   color: var(--lime);
 }
 
@@ -147,7 +147,7 @@
   transition: background var(--transition);
 }
 .profile-stat-btn:hover {
-  background: rgba(251,191,36,0.08);
+  background: rgba(245,185,66,0.08);
 }
 .profile-stat:last-child { border-right: none; }
 .profile-stat-val { font-size: 22px; font-weight: 800; color: var(--white); }
@@ -180,7 +180,7 @@
 .profile-tab:hover { color: var(--white); }
 .profile-tab.active {
   background: var(--lime); color: var(--lime-ink); font-weight: 700;
-  box-shadow: 0 2px 10px rgba(251,191,36,0.35);
+  box-shadow: 0 2px 10px rgba(245,185,66,0.35);
 }
 
 .profile-tab-content { align-items: start; }
@@ -188,8 +188,8 @@
 /* Skills editing */
 .skill-tag.removable {
   display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(251,191,36,0.1);
-  border-color: rgba(251,191,36,0.3); color: var(--lime);
+  background: rgba(245,185,66,0.1);
+  border-color: rgba(245,185,66,0.3); color: var(--lime);
 }
 .remove-skill-btn {
   background: none; border: none;
@@ -245,7 +245,7 @@
 }
 .profile-project-row:hover {
   transform: translateX(4px);
-  border-color: rgba(251,191,36,0.25) !important;
+  border-color: rgba(245,185,66,0.25) !important;
 }
 
 .profile-connections-list {

@@ -26,8 +26,8 @@
   cursor: pointer;
   transition: all var(--transition);
 }
-.type-btn:hover { border-color: var(--lime); color: var(--lime); background: rgba(251,191,36,0.06); }
-.type-btn.active { border-color: var(--lime); color: var(--lime); background: rgba(251,191,36,0.12); }
+.type-btn:hover { border-color: var(--lime); color: var(--lime); background: rgba(245,185,66,0.06); }
+.type-btn.active { border-color: var(--lime); color: var(--lime); background: rgba(245,185,66,0.12); }
 
 .skills-input-row {
   display: flex; gap: 8px;
@@ -40,7 +40,7 @@
   margin-top: 8px;
 }
 .skill-tag.active {
-  background: rgba(251,191,36,0.15);
+  background: rgba(245,185,66,0.15);
   border-color: var(--lime);
   color: var(--lime);
   display: inline-flex; align-items: center; gap: 5px;
@@ -78,7 +78,7 @@
 }
 .filter-chip:hover { border-color: var(--lime); color: var(--lime); }
 .filter-chip.active {
-  background: rgba(251,191,36,0.15);
+  background: rgba(245,185,66,0.15);
   border-color: var(--lime); color: var(--lime); font-weight: 700;
 }
 

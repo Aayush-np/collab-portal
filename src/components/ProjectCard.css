@@ -2,14 +2,13 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  animation: fadeInUp 0.4s ease forwards;
   cursor: default;
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  transition: transform 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out), border-color 0.22s var(--ease-out);
 }
 .project-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(251,191,36, 0.75) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(251,191,36, 0.25);
+  border-color: rgba(245,191,36, 0.55) !important;
+  box-shadow: var(--shadow-lg), var(--edge-light), 0 0 0 1px rgba(245,191,36, 0.18);
 }
 .internship-card { border-color: rgba(245,158,11,0.25) !important; }
 .internship-card:hover { border-color: rgba(245,158,11,0.5) !important; }
@@ -69,7 +68,7 @@
   color: var(--gray-300);
 }
 .spots-left {
-  background: rgba(251,191,36,0.15);
+  background: rgba(245,185,66,0.15);
   color: var(--lime);
   padding: 1px 6px;
   border-radius: var(--radius-full);
@@ -84,17 +83,18 @@
 }
 .action-btn {
   display: flex; align-items: center; gap: 4px;
-  padding: 5px 10px;
+  padding: 6px 11px;
   border-radius: var(--radius-sm);
-  background: var(--navy-700);
+  background: rgba(26,32,44,0.55);
   border: 1px solid var(--navy-600);
   color: var(--gray-300);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: color 0.16s var(--ease-out), border-color 0.16s var(--ease-out), background 0.16s var(--ease-out), transform 0.15s var(--ease-spring);
 }
-.action-btn:hover { color: var(--white); border-color: var(--navy-400); }
+.action-btn:hover { color: var(--white); border-color: var(--navy-400); background: var(--navy-750); transform: translateY(-1px); }
+.action-btn:active { transform: scale(0.95); }
 .action-btn.liked { color: var(--danger); border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); }
 
 .apply-btn { font-size: 12px; padding: 6px 14px; }

@@ -2,25 +2,27 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(420px 220px at 92% -40%, rgba(251,191,36, 0.16), transparent 60%),
-    radial-gradient(380px 220px at 8% 130%, rgba(34,211,238, 0.18), transparent 60%),
-    linear-gradient(135deg, var(--navy-700) 0%, var(--navy-600) 100%);
+    radial-gradient(420px 220px at 92% -40%, rgba(245,185,36, 0.12), transparent 60%),
+    radial-gradient(380px 220px at 8% 130%, rgba(56,189,248, 0.10), transparent 60%),
+    linear-gradient(135deg, var(--navy-750) 0%, var(--navy-800) 100%);
   border: 1px solid var(--navy-500);
-  border-left: 4px solid var(--lime);
+  border-left: 3px solid var(--lime);
   border-radius: var(--radius-lg);
-  padding: 24px 28px;
+  padding: 26px 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
   margin-bottom: 24px;
+  box-shadow: var(--shadow-sm), var(--edge-light);
+  animation: riseIn 0.5s var(--ease-out) both;
 }
 .welcome-banner .welcome-greeting {
-  letter-spacing: -0.4px;
+  letter-spacing: -0.03em;
 }
 .welcome-greeting {
-  font-size: 22px;
+  font-size: 23px;
   font-weight: 800;
   margin-bottom: 6px;
 }
@@ -34,25 +36,26 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 16px;
-  background: linear-gradient(135deg, var(--navy-700) 0%, var(--navy-600) 100%);
+  padding: 18px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.024), rgba(255,255,255,0) 40%), var(--navy-800);
   border: 1px solid var(--navy-500);
   border-radius: var(--radius-lg);
-  transition: all var(--transition);
+  box-shadow: var(--shadow-sm), var(--edge-light);
+  transition: transform 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out), border-color 0.22s var(--ease-out);
 }
 
 .stat-btn {
   border: none;
-  background: linear-gradient(135deg, var(--navy-700) 0%, var(--navy-600) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.024), rgba(255,255,255,0) 40%), var(--navy-800);
   cursor: pointer;
   padding: 20px 16px;
 }
 
 .stat-btn:hover {
-  background: linear-gradient(135deg, var(--navy-600) 0%, var(--navy-500) 100%);
-  border-color: var(--lime);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(251,191,36, 0.15);
+  background: linear-gradient(180deg, rgba(255,255,255,0.024), rgba(255,255,255,0) 40%), var(--navy-800);
+  border-color: rgba(245,185,36,0.4);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md), var(--edge-light), var(--shadow-lime);
 }
 
 .stat-icon {
@@ -63,16 +66,20 @@
 }
 
 .stat-val {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--lime);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-align: center;
-  color: var(--gray-300);
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .dashboard-grid {
@@ -94,29 +101,34 @@
 
 .dashboard-side { display: flex; flex-direction: column; gap: 16px; }
 
-.widget { padding: 16px; }
+.widget { padding: 18px; }
 .widget-title {
   display: flex; align-items: center; gap: 8px;
-  font-size: 14px; font-weight: 700;
-  margin-bottom: 14px; color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--gray-400);
+  margin-bottom: 14px;
 }
+.widget-title .lime { color: var(--lime); }
 
 /* Match list */
 .match-list { display: flex; flex-direction: column; gap: 10px; }
 .match-item {
   display: flex; align-items: center; gap: 10px;
   padding: 8px; border-radius: var(--radius-sm);
-  transition: background var(--transition);
+  transition: background 0.16s var(--ease-out), transform 0.16s var(--ease-out);
   cursor: pointer;
 }
-.match-item:hover { background: var(--navy-700); }
+.match-item:hover { background: var(--navy-750); transform: translateX(3px); }
 .match-info { flex: 1; min-width: 0; }
 .match-name { font-size: 13px; font-weight: 600; color: var(--white); }
 .match-skills { font-size: 11px; }
 .match-score {
   font-size: 13px; font-weight: 800;
   color: var(--lime);
-  background: rgba(251,191,36,0.1);
+  background: rgba(245,185,66,0.1);
   padding: 3px 8px;
   border-radius: var(--radius-full);
   white-space: nowrap;
@@ -131,7 +143,7 @@
 }
 .notif-item-row.unread {
   border-left-color: var(--lime);
-  background: rgba(251,191,36,0.05);
+  background: rgba(245,185,66,0.05);
 }
 .notif-text { font-size: 12px; color: var(--off-white); margin-bottom: 2px; }
 .notif-time { font-size: 10px; }
