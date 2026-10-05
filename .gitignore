@@ -16,3 +16,8 @@ backend/data/
 *.log
 .DS_Store
 Thumbs.db
+
+srv-out.txt
+srv-err.txt
+group-test*.log
+e2e.log
