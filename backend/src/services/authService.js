@@ -5,9 +5,11 @@ import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuidv4 } from 'uuid';
 import {
   consumePasswordResetToken,
+  consumePendingRegistration,
   consumeRefreshToken,
   createPasswordResetToken,
   dbProvider,
+  findPendingRegistrationByEmail,
   findProfileByUserId,
   findUserByEmail,
   findUserByGoogleIdOrEmail,
@@ -15,10 +17,12 @@ import {
   insertUser,
   mongo,
   readJson,
+  refreshPendingRegistrationToken,
   revokeAllRefreshTokensForUser,
   revokeRefreshToken,
   storeRefreshToken,
   updateUser,
+  upsertPendingRegistration,
   upsertProfile,
   writeJson,
 } from './storage.js';
@@ -123,6 +127,7 @@ export const findUserById = async (id) => findUserByIdFromStorage(id);
 
 export const registerWithVerification = async ({ name, email, password }) => {
   const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedName = String(name || '').trim();
 
   assertAllowedEmail(normalizedEmail);
 
@@ -131,33 +136,25 @@ export const registerWithVerification = async ({ name, email, password }) => {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const userId = uuidv4();
-  const user = {
-    id: userId,
-    name: String(name || '').trim(),
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000).toISOString();
+
+  // The real user is only created AFTER the verification link is clicked.
+  // Until then the signup is an invisible pending record — fake or
+  // unreachable emails never pollute the users collection.
+  // Re-registering an unverified email simply refreshes the pending record
+  // and sends a new link (acts as a resend).
+  await upsertPendingRegistration({
+    id: uuidv4(),
+    name: normalizedName,
     email: normalizedEmail,
     passwordHash,
-    provider: 'local',
-    role: roleForEmail(normalizedEmail),
-    googleId: null,
-    emailVerified: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  await insertUser(user);
-  const profile = normalizeLegacyProfileDefaults(createDefaultProfile({ userId: user.id, name: user.name, email: user.email }));
-  await upsertProfile(user.id, profile);
-
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  await createVerificationToken({
-    userId,
     tokenHash: hashToken(verificationToken),
-    expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000).toISOString(),
+    expiresAt,
   });
 
-  // Fire-and-forget: don't block response on slow SMTP
-  sendVerificationEmail({ toEmail: normalizedEmail, verificationToken, name: user.name }).catch((err) => {
+  // Fire-and-forget: don't block response on email delivery
+  sendVerificationEmail({ toEmail: normalizedEmail, verificationToken, name: normalizedName }).catch((err) => {
     console.error('Failed to send verification email:', err);
   });
 
@@ -357,7 +354,34 @@ export const consumeVerificationToken = async (tokenHash) => {
 };
 
 export const verifyEmail = async ({ token }) => {
-  const consumed = await consumeVerificationToken(hashToken(token));
+  const tokenHash = hashToken(token);
+
+  // New flow: signup is still pending — create the real user now.
+  const pending = await consumePendingRegistration(tokenHash);
+  if (pending) {
+    const now = new Date().toISOString();
+    const user = {
+      id: uuidv4(),
+      name: pending.name,
+      email: pending.email,
+      passwordHash: pending.passwordHash,
+      provider: 'local',
+      role: roleForEmail(pending.email),
+      googleId: null,
+      emailVerified: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await insertUser(user);
+    const profile = normalizeLegacyProfileDefaults(
+      createDefaultProfile({ userId: user.id, name: user.name, email: user.email })
+    );
+    await upsertProfile(user.id, profile);
+    return { ok: true };
+  }
+
+  // Legacy flow: the user already exists but hasn't verified yet.
+  const consumed = await consumeVerificationToken(tokenHash);
   if (!consumed) {
     throw new Error('Invalid or expired verification token.');
   }
@@ -373,25 +397,43 @@ export const verifyEmail = async ({ token }) => {
 
 export const resendVerificationEmail = async ({ email }) => {
   const normalizedEmail = String(email || '').trim().toLowerCase();
-  const user = await findUserByEmail(normalizedEmail);
 
   // Never reveal whether the account exists or is already verified.
-  if (!user || user.emailVerified !== false) {
+  const user = await findUserByEmail(normalizedEmail);
+  let name = '';
+  let toEmail = normalizedEmail;
+
+  if (user) {
+    if (user.emailVerified !== false) return { ok: true };
+
+    // Legacy: user exists but is unverified.
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    await createVerificationToken({
+      userId: user.id,
+      tokenHash: hashToken(verificationToken),
+      expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000).toISOString(),
+    });
+    name = user.name;
+    sendVerificationEmail({ toEmail, verificationToken, name }).catch((err) => {
+      console.error('Failed to resend verification email:', err);
+    });
     return { ok: true };
   }
 
+  // New flow: signup pending verification.
+  const pending = await findPendingRegistrationByEmail(normalizedEmail);
+  if (!pending) return { ok: true };
+
   const verificationToken = crypto.randomBytes(32).toString('hex');
-  await createVerificationToken({
-    userId: user.id,
+  await refreshPendingRegistrationToken({
+    email: normalizedEmail,
     tokenHash: hashToken(verificationToken),
     expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000).toISOString(),
   });
-
-  // Fire-and-forget: don't block the response on email delivery.
-  sendVerificationEmail({ toEmail: user.email, verificationToken, name: user.name }).catch((err) => {
+  name = pending.name;
+  sendVerificationEmail({ toEmail, verificationToken, name }).catch((err) => {
     console.error('Failed to resend verification email:', err);
   });
-
   return { ok: true };
 };
 

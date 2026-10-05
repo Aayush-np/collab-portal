@@ -1,5 +1,6 @@
 import { Heart, MessageCircle, Users, Calendar, Briefcase, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
+import { timeAgo } from '../utils/time';
 import './ProjectCard.css';
 
 export default function ProjectCard({ project, currentUserId, onViewDetail, onApply, requestStatus = '' }) {
@@ -13,6 +14,8 @@ export default function ProjectCard({ project, currentUserId, onViewDetail, onAp
   const isOwner = Boolean(currentUserId) && (project.author?.id === currentUserId || project.authorId === currentUserId);
   const isRequested = requestStatus === 'pending';
   const isJoined = requestStatus === 'accepted';
+  // Live relative time from the actual timestamp (never goes stale).
+  const postedLabel = timeAgo(project.createdAt) || project.posted || '';
 
   const handleLike = (e) => {
     e.stopPropagation();
@@ -30,7 +33,7 @@ export default function ProjectCard({ project, currentUserId, onViewDetail, onAp
           </div>
           <div>
             <div className="author-name">{project.author?.name || 'User'}</div>
-            <div className="author-meta muted">{project.author?.usn || ''} {project.author?.usn ? '·' : ''} {project.posted || 'Just now'}</div>
+            <div className="author-meta muted">{project.author?.usn || ''} {project.author?.usn ? '·' : ''} {postedLabel}</div>
           </div>
         </div>
         <div className="project-badges">
@@ -116,7 +119,7 @@ export default function ProjectCard({ project, currentUserId, onViewDetail, onAp
 }
 
 function getAvatarColor(name) {
-  const colors = ['#818cf8','#22d3ee','#f59e0b','#34d399','#f472b6','#a78bfa'];
+  const colors = ['#fbbf24', '#38bdf8', '#34d399', '#f472b6', '#a3e635', '#fb923c'];
   let hash = 0;
   for (let c of name) hash = c.charCodeAt(0) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];

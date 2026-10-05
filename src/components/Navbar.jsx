@@ -200,7 +200,7 @@ export default function Navbar({
           onClick={() => setPage('profile')}
           title="View profile"
         >
-          <div className="avatar avatar-sm" style={{ background: 'linear-gradient(135deg, #818cf8, var(--lime-dim))', color: '#ffffff', fontSize: '11px', fontWeight: 800 }}>
+          <div className="avatar avatar-sm" style={{ background: 'linear-gradient(135deg, var(--lime), var(--lime-dim))', color: 'var(--lime-ink)', fontSize: '11px', fontWeight: 800 }}>
             {currentUser.initials}
           </div>
           <span className="navbar-username">{firstName}</span>

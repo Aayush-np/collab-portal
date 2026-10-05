@@ -10,6 +10,7 @@ import { apiDelete, apiGet } from '../services/api';
 import { openChatWithUser } from '../utils/chatActions';
 import { useModalBehavior } from '../hooks/useModalBehavior';
 import { toast } from '../utils/toast';
+import { timeAgo } from '../utils/time';
 import './Profile.css';
 
 const clampPct = (val) => {
@@ -254,7 +255,7 @@ export default function Profile({ setPage, currentUser, setCurrentUser, accessTo
 
         <div className="profile-header-body">
           <div className="profile-avatar-row">
-            <div className="avatar avatar-xl profile-avatar" style={!profileForDisplay.avatar ? { background: 'linear-gradient(135deg, #818cf8, var(--lime-dim))', color: '#ffffff', fontWeight: 900, fontSize: 36 } : undefined}>
+            <div className="avatar avatar-xl profile-avatar" style={!profileForDisplay.avatar ? { background: 'linear-gradient(135deg, var(--lime), var(--lime-dim))', color: 'var(--lime-ink)', fontWeight: 900, fontSize: 36 } : undefined}>
               {profileForDisplay.avatar ? (
                 <img src={profileForDisplay.avatar} alt={`${profileForDisplay.name} profile`} className="profile-avatar-img" />
               ) : (
@@ -660,7 +661,7 @@ function ProjectDetailModal({ project, currentUserId, onClose }) {
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{project.author?.name || 'User'}</div>
-              <div className="muted" style={{ fontSize: 11 }}>{project.author?.usn || ''} · {project.posted || 'Just now'}</div>
+              <div className="muted" style={{ fontSize: 11 }}>{project.author?.usn || ''} · {timeAgo(project.createdAt)}</div>
             </div>
           </div>
         </div>

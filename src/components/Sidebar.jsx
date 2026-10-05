@@ -1,9 +1,10 @@
 import {
   LayoutDashboard, Search, PlusCircle, MessageSquare,
-  User, LogOut, Zap, ChevronRight, Shield, UserPlus
+  User, LogOut, ChevronRight, Shield, UserPlus
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import logo from '../img/logo.png';
 import './Sidebar.css';
 
 export default function Sidebar({ page, setPage, currentUser, isAdmin, onLogout, messageUnreadCount = 0, requestUnreadCount = 0 }) {
@@ -23,9 +24,7 @@ export default function Sidebar({ page, setPage, currentUser, isAdmin, onLogout,
     <aside className="sidebar">
       {/* Logo */}
       <div className="sidebar-logo" onClick={() => setPage('dashboard')}>
-        <div className="logo-icon">
-          <Zap size={20} fill="currentColor" />
-        </div>
+        <img src={logo} alt="CollabHub" className="logo-img" />
         <div>
           <div className="logo-text">CollabHub</div>
           <div className="logo-sub">CMRIT Portal</div>
@@ -59,9 +58,16 @@ export default function Sidebar({ page, setPage, currentUser, isAdmin, onLogout,
 
       <div className="divider" />
 
+      {/* Legal links */}
+      <div className="sidebar-legal">
+        <a href="/privacy">Privacy Policy</a>
+        <span className="sidebar-legal-dot">·</span>
+        <a href="/terms">Terms & Conditions</a>
+      </div>
+
       {/* User card at bottom */}
       <div className="sidebar-user">
-        <div className="avatar avatar-sm" style={{ background: 'linear-gradient(135deg, #818cf8, var(--lime-dim))', color: '#ffffff' }}>
+        <div className="avatar avatar-sm" style={{ background: 'linear-gradient(135deg, var(--lime), var(--lime-dim))', color: 'var(--lime-ink)' }}>
           {currentUser.initials}
         </div>
         <div className="sidebar-user-info">

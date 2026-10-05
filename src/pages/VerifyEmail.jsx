@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Mail, Loader2, CheckCircle, AlertCircle, Send } from 'lucide-react';
 import { apiPost } from '../services/api';
+import logo from '../img/logo.png';
 import './Auth.css';
 
 export default function VerifyEmail() {
@@ -88,7 +89,7 @@ export default function VerifyEmail() {
         <div className="auth-bg-glow auth-bg-glow-b" />
 
         <div className="auth-card">
-          <div className="auth-brand">CollabHub</div>
+          <div className="auth-brand"><img src={logo} alt="" className="auth-logo" /><span>CollabHub</span></div>
           <div className="auth-spinner">
             <Loader2 size={32} className="spin" />
           </div>
@@ -106,7 +107,7 @@ export default function VerifyEmail() {
         <div className="auth-bg-glow auth-bg-glow-b" />
 
         <div className="auth-card">
-          <div className="auth-brand">CollabHub</div>
+          <div className="auth-brand"><img src={logo} alt="" className="auth-logo" /><span>CollabHub</span></div>
           <div className="auth-status-icon success">
             <Mail size={48} />
           </div>
@@ -130,7 +131,7 @@ export default function VerifyEmail() {
       <div className="auth-bg-glow auth-bg-glow-b" />
 
       <div className="auth-card">
-        <div className="auth-brand">CollabHub</div>
+        <div className="auth-brand"><img src={logo} alt="" className="auth-logo" /><span>CollabHub</span></div>
         <div className={`auth-status-icon ${status === 'success' ? 'success' : 'error'}`}>
           {status === 'success' ? <CheckCircle size={48} /> : <AlertCircle size={48} />}
         </div>

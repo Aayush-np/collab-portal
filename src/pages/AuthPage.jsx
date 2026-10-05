@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, LogIn, UserPlus } from 'lucide-react';
+import logo from '../img/logo.png';
 import './Auth.css';
 
 const GOOGLE_SCRIPT_ID = 'google-identity-script';
@@ -231,7 +232,10 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
       <div className="auth-bg-glow auth-bg-glow-b" />
 
       <div className="auth-card">
-        <div className="auth-brand">CollabHub</div>
+        <div className="auth-brand">
+          <img src={logo} alt="" className="auth-logo" />
+          <span>CollabHub</span>
+        </div>
         <h1>{currentTitle}</h1>
         <p className="auth-sub">Build, discover, and collaborate with the right teammates.</p>
 
@@ -449,6 +453,10 @@ export default function AuthPage({ onLogin, onRegister, onGoogleLogin, onForgotP
         {googleEnabled ? (
           <div id="google-signin-btn" className="google-btn-wrap" />
         ) : null}
+
+        <p className="auth-legal">
+          By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
+        </p>
 
       </div>
     </div>

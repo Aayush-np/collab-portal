@@ -8,8 +8,8 @@
 }
 .project-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(99,102,241, 0.75) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(99,102,241, 0.25);
+  border-color: rgba(251,191,36, 0.75) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(251,191,36, 0.25);
 }
 .internship-card { border-color: rgba(245,158,11,0.25) !important; }
 .internship-card:hover { border-color: rgba(245,158,11,0.5) !important; }
@@ -69,7 +69,7 @@
   color: var(--gray-300);
 }
 .spots-left {
-  background: rgba(99,102,241,0.15);
+  background: rgba(251,191,36,0.15);
   color: var(--lime);
   padding: 1px 6px;
   border-radius: var(--radius-full);

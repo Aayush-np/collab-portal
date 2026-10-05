@@ -12,3 +12,9 @@ export const emitToUsers = (userIds, event, payload) => {
     ioInstance.to(`user:${id}`).emit(event, payload);
   });
 };
+
+// Broadcast to every connected client (e.g. ideas feed updates).
+export const emitToAll = (event, payload) => {
+  if (!ioInstance) return;
+  ioInstance.emit(event, payload);
+};

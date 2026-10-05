@@ -9,6 +9,7 @@ A full-stack collaboration platform for CMRIT students to discover, post, and co
 - **Real-time Messaging** — Socket.IO powered chat with typing indicators, read receipts, favorites, and clean delivery ticks
 - **Auto Chat on Connect** — Accepting a connection instantly creates a chat, so you can message new connections right away
 - **Real-time Notifications** — Toast + bell menu alerts for new messages, connection requests/accepts, and project requests (stored server-side, mark-as-read, clear-all)
+- **Live Feed** — New/edited/deleted posts appear for everyone instantly via Socket.IO — no page refresh needed
 - **Connection System** — Send/accept connection requests, manage project applications
 - **Email Verification** — Secure account creation with email verification flow (Brevo API), plus resend link option
 - **Password Reset** — Secure token-based recovery via email (token hidden from UI and URL)
@@ -52,14 +53,15 @@ collab-portal/
 ## 🔒 Security Features
 
 - **Email Domain Restriction** — Only `@cmrit.ac.in` emails can register
+- **Deferred Registration** — a signup creates *no* user data until the verification link is clicked; fake/unreachable emails never enter the database or search results
 - **JWT Authentication** — Short-lived access tokens + rotating refresh tokens
 - **Rate Limiting** — Login/register endpoints protected against brute force
-- **Email Verification Required** — Accounts inactive until email verified
-- **Secure Password Reset** — Time-limited, single-use tokens sent via email
-- **CSP & Security Headers** — Configured via `public/_headers`
+- **Secure Password Reset** — Time-limited, single-use tokens; links use URL fragments and are hidden from the address bar and server logs
+- **CSP & Security Headers** — Configured via `vercel.json`
 - **Input Validation** — Server-side sanitization, length limits, regex escaping
-- **CORS Protection** — Strict origin validation
+- **CORS Protection** — Strict origin validation (multi-origin support)
 - **Audit Logging** — All admin actions logged
+- **Privacy Policy & Terms** — Public legal pages at `/privacy` and `/terms`
 
 ## 🚀 Quick Start (Local Development)
 
@@ -164,9 +166,9 @@ VITE_GOOGLE_CLIENT_ID=
 ## 📝 API Endpoints
 
 ### Auth
-- `POST /api/auth/register` — Register with email verification
+- `POST /api/auth/register` — Register (defers user creation until email is verified)
 - `POST /api/auth/login` — Login (requires verified email)
-- `POST /api/auth/verify-email` — Verify email token
+- `POST /api/auth/verify-email` — Verify email token (creates the user)
 - `POST /api/auth/resend-verification` — Resend verification email
 - `POST /api/auth/forgot-password` — Request password reset
 - `POST /api/auth/reset-password` — Reset password with token

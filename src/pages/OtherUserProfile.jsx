@@ -5,6 +5,7 @@ import { apiGet, apiPost } from '../services/api';
 import ProjectCard from '../components/ProjectCard';
 import { useModalBehavior } from '../hooks/useModalBehavior';
 import { toast } from '../utils/toast';
+import { timeAgo } from '../utils/time';
 import './Profile.css';
 
 export default function OtherUserProfile({ userId, setPage, currentUser, accessToken, withAccessRetry, onBack }) {
@@ -259,7 +260,7 @@ function ProjectDetailModal({ project, currentUserId, onClose, onApply, requestS
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{project.author?.name || 'User'}</div>
-              <div className="muted" style={{ fontSize: 11 }}>{project.author?.usn || ''} · {project.posted || 'Just now'}</div>
+              <div className="muted" style={{ fontSize: 11 }}>{project.author?.usn || ''} · {timeAgo(project.createdAt)}</div>
             </div>
           </div>
         </div>

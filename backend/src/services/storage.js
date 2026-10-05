@@ -25,6 +25,7 @@ const ensureJsonDb = () => {
       refreshTokens: [],
       passwordResetTokens: [],
       verificationTokens: [],
+      pendingRegistrations: [],
       notifications: [],
       conversations: [],
       connectionRequests: [],
@@ -45,6 +46,7 @@ const readJson = () => {
     refreshTokens: parsed.refreshTokens || [],
     passwordResetTokens: parsed.passwordResetTokens || [],
     verificationTokens: parsed.verificationTokens || [],
+    pendingRegistrations: parsed.pendingRegistrations || [],
     notifications: parsed.notifications || [],
     conversations: parsed.conversations || [],
     connectionRequests: parsed.connectionRequests || [],
@@ -79,6 +81,9 @@ const mongo = async () => {
       mongoDb.collection('verificationTokens').createIndex({ tokenHash: 1 }, { unique: true }),
       mongoDb.collection('verificationTokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       mongoDb.collection('notifications').createIndex({ userId: 1, createdAt: -1 }),
+      mongoDb.collection('pendingRegistrations').createIndex({ email: 1 }, { unique: true }),
+      mongoDb.collection('pendingRegistrations').createIndex({ tokenHash: 1 }),
+      mongoDb.collection('pendingRegistrations').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       mongoDb.collection('conversations').createIndex({ id: 1 }, { unique: true }),
       mongoDb.collection('conversations').createIndex({ participants: 1 }),
       mongoDb.collection('connectionRequests').createIndex({ id: 1 }, { unique: true }),
@@ -288,6 +293,8 @@ export const searchUsers = async ({ q = '', excludeUserId = '', limit = 20 } = {
   if (dbProvider === 'mongo') {
     const db = await mongo();
     const filter = {
+      // Never surface unverified accounts in people search.
+      emailVerified: { $ne: false },
       ...(excludeUserId ? { id: { $ne: excludeUserId } } : {}),
       ...(safeSearch
         ? {
@@ -303,6 +310,7 @@ export const searchUsers = async ({ q = '', excludeUserId = '', limit = 20 } = {
 
   const db = readJson();
   return db.users
+    .filter((u) => u.emailVerified !== false)
     .filter((u) => u.id !== excludeUserId)
     .filter((u) => {
       if (!safeSearch) return true;
@@ -788,6 +796,83 @@ export const listAuditLogs = async ({ page = 1, limit = 20 } = {}) => {
     page: safePage,
     limit: safeLimit,
   };
+};
+
+// ── PENDING REGISTRATIONS ─────────────────────────────────────────
+// Signups live here until the email verification link is clicked.
+// Only then is a real user created — fake/unreachable emails never
+// pollute the users collection or any search.
+
+export const upsertPendingRegistration = async ({ id, name, email, passwordHash, tokenHash, expiresAt }) => {
+  const payload = {
+    id,
+    name,
+    email,
+    passwordHash,
+    tokenHash,
+    expiresAt,
+    createdAt: new Date().toISOString(),
+  };
+
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    await db.collection('pendingRegistrations').deleteMany({ email: payload.email });
+    await db.collection('pendingRegistrations').insertOne(payload);
+    return payload;
+  }
+
+  const db = readJson();
+  db.pendingRegistrations = (db.pendingRegistrations || []).filter((p) => p.email !== payload.email);
+  db.pendingRegistrations.push(payload);
+  writeJson(db);
+  return payload;
+};
+
+export const findPendingRegistrationByEmail = async (email) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    return db.collection('pendingRegistrations').findOne({ email }, { projection: { _id: 0 } });
+  }
+
+  const db = readJson();
+  return (db.pendingRegistrations || []).find((p) => p.email === email) || null;
+};
+
+export const consumePendingRegistration = async (tokenHash) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    const found = await db.collection('pendingRegistrations').findOne({ tokenHash }, { projection: { _id: 0 } });
+    if (!found) return null;
+    await db.collection('pendingRegistrations').deleteOne({ tokenHash });
+    if (new Date(found.expiresAt).getTime() <= Date.now()) return null;
+    return found;
+  }
+
+  const db = readJson();
+  db.pendingRegistrations = db.pendingRegistrations || [];
+  const found = db.pendingRegistrations.find((p) => p.tokenHash === tokenHash);
+  if (!found) return null;
+  db.pendingRegistrations = db.pendingRegistrations.filter((p) => p.tokenHash !== tokenHash);
+  writeJson(db);
+  if (new Date(found.expiresAt).getTime() <= Date.now()) return null;
+  return found;
+};
+
+export const refreshPendingRegistrationToken = async ({ email, tokenHash, expiresAt }) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    await db.collection('pendingRegistrations').updateOne(
+      { email },
+      { $set: { tokenHash, expiresAt } }
+    );
+    return;
+  }
+
+  const db = readJson();
+  db.pendingRegistrations = (db.pendingRegistrations || []).map((p) => (
+    p.email === email ? { ...p, tokenHash, expiresAt } : p
+  ));
+  writeJson(db);
 };
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────────

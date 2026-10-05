@@ -16,6 +16,7 @@ import {
 } from '../services/storage.js';
 import { addAuditLog } from '../services/storage.js';
 import { emitToUsers } from '../services/socketHub.js';
+import { emitToAll } from '../services/socketHub.js';
 import { notifyUsers } from '../services/notificationService.js';
 
 const router = express.Router();
@@ -153,6 +154,7 @@ router.post('/', async (req, res) => {
   });
 
   const mapped = await mapIdeaForClient(idea);
+  emitToAll('ideas:changed', { action: 'created', ideaId: idea.id });
   return res.status(201).json({ idea: mapped });
 });
 
@@ -205,6 +207,7 @@ router.put('/:id', async (req, res) => {
   });
 
   const mapped = await mapIdeaForClient(updated);
+  emitToAll('ideas:changed', { action: 'updated', ideaId: updated.id });
   return res.json({ idea: mapped });
 });
 
@@ -229,6 +232,7 @@ router.delete('/:id', async (req, res) => {
   }
 
   await deleteIdeaById(idea.id);
+  emitToAll('ideas:changed', { action: 'deleted', ideaId: idea.id });
 
   await addAuditLog({
     id: uuidv4(),

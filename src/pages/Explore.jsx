@@ -7,6 +7,7 @@ import ProjectCard from '../components/ProjectCard';
 import { openChatWithUser } from '../utils/chatActions';
 import { useModalBehavior } from '../hooks/useModalBehavior';
 import { toast } from '../utils/toast';
+import { timeAgo } from '../utils/time';
 import './Explore.css';
 
 export default function Explore({ setPage, currentUser, accessToken, withAccessRetry, setViewingUserId }) {
@@ -32,53 +33,77 @@ export default function Explore({ setPage, currentUser, accessToken, withAccessR
     if (!accessToken) {
       setProjects([]);
       setUsers([]);
-      return;
+      return undefined;
     }
 
-    Promise.all([
-      withAccessRetry((token) => apiGet('/ideas', token)),
-      withAccessRetry((token) => apiGet('/messages/users?q=', token)),
-      withAccessRetry((token) => apiGet('/connections/summary', token)),
-      withAccessRetry((token) => apiGet('/ideas/requests?type=outgoing', token)),
-    ])
-      .then(([ideasResult, usersResult, connectionsResult, projectRequestsResult]) => {
-        setProjects(ideasResult.ideas || []);
-        const statusMap = {};
-        (projectRequestsResult.requests || []).forEach((request) => {
-          statusMap[request.ideaId] = request.status;
+    let cancelled = false;
+
+    const loadAll = () => {
+      Promise.all([
+        withAccessRetry((token) => apiGet('/ideas', token)),
+        withAccessRetry((token) => apiGet('/messages/users?q=', token)),
+        withAccessRetry((token) => apiGet('/connections/summary', token)),
+        withAccessRetry((token) => apiGet('/ideas/requests?type=outgoing', token)),
+      ])
+        .then(([ideasResult, usersResult, connectionsResult, projectRequestsResult]) => {
+          if (cancelled) return;
+          setProjects(ideasResult.ideas || []);
+          const statusMap = {};
+          (projectRequestsResult.requests || []).forEach((request) => {
+            statusMap[request.ideaId] = request.status;
+          });
+          setProjectStatusMap(statusMap);
+          setUsers((usersResult.users || []).map((u) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            initials: u.initials,
+            avatar: u.avatar,
+            skills: u.skills || [],
+            usn: u.usn || '',
+            dept: u.dept || 'Student',
+            year: u.year || '',
+            bio: u.bio || '',
+            projectsPosted: 0,
+            collaborations: 0,
+            matchScore: u.matchScore,
+          })));
+          setConnectionSummary({
+            connectedUserIds: connectionsResult.connectedUserIds || [],
+            outgoingToUserIds: connectionsResult.outgoingToUserIds || [],
+            incomingFromUserIds: connectionsResult.incomingFromUserIds || [],
+          });
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setProjects([]);
+          setUsers([]);
+          setProjectStatusMap({});
+          setConnectionSummary({
+            connectedUserIds: [],
+            outgoingToUserIds: [],
+            incomingFromUserIds: [],
+          });
         });
-        setProjectStatusMap(statusMap);
-        setUsers((usersResult.users || []).map((u) => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          initials: u.initials,
-          avatar: u.avatar,
-          skills: u.skills || [],
-          usn: u.usn || '',
-          dept: u.dept || 'Student',
-          year: u.year || '',
-          bio: u.bio || '',
-          projectsPosted: 0,
-          collaborations: 0,
-          matchScore: u.matchScore,
-        })));
-        setConnectionSummary({
-          connectedUserIds: connectionsResult.connectedUserIds || [],
-          outgoingToUserIds: connectionsResult.outgoingToUserIds || [],
-          incomingFromUserIds: connectionsResult.incomingFromUserIds || [],
-        });
-      })
-      .catch(() => {
-        setProjects([]);
-        setUsers([]);
-        setProjectStatusMap({});
-        setConnectionSummary({
-          connectedUserIds: [],
-          outgoingToUserIds: [],
-          incomingFromUserIds: [],
-        });
-      });
+    };
+
+    loadAll();
+
+    // Realtime: anyone posts/edits/deletes an idea -> refresh without a page reload.
+    let refreshTimer = null;
+    const onIdeasChanged = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        if (!cancelled) loadAll();
+      }, 300);
+    };
+    window.addEventListener('ideas-changed', onIdeasChanged);
+
+    return () => {
+      cancelled = true;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      window.removeEventListener('ideas-changed', onIdeasChanged);
+    };
   }, [accessToken]);
 
   const sendConnectionRequest = async (userId) => {
@@ -465,7 +490,7 @@ function ProjectDetailModal({ project, currentUserId, onClose, onApply, requestS
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{project.author?.name || 'User'}</div>
-              <div className="muted" style={{ fontSize: 11 }}>{project.author?.usn || ''} · {project.posted || 'Just now'}</div>
+              <div className="muted" style={{ fontSize: 11 }}>{project.author?.usn || ''} · {timeAgo(project.createdAt)}</div>
             </div>
           </div>
         </div>

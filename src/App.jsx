@@ -14,6 +14,7 @@ import Requests from './pages/Requests';
 import AuthPage from './pages/AuthPage';
 import VerifyEmail from './pages/VerifyEmail';
 import OtherUserProfile from './pages/OtherUserProfile';
+import LegalPage from './pages/LegalPage';
 import Toaster from './components/Toaster';
 import { apiGet, apiPost, apiPut, apiDelete } from './services/api';
 import { openChatWithUser } from './utils/chatActions';
@@ -327,6 +328,10 @@ export default function App() {
       if (!liveChat) toast(n.text, 'info');
     });
 
+    socket.on('ideas:changed', () => {
+      window.dispatchEvent(new CustomEvent('ideas-changed'));
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -543,6 +548,17 @@ export default function App() {
         return <Dashboard setPage={setPage} currentUser={currentUser} />;
     }
   };
+
+  // Legal pages are public and render for everyone, signed in or not.
+  const legalDoc = window.location.pathname === '/privacy'
+    ? 'privacy'
+    : window.location.pathname === '/terms'
+      ? 'terms'
+      : '';
+
+  if (legalDoc) {
+    return <LegalPage doc={legalDoc} />;
+  }
 
   if (!accessToken && !refreshToken) {
     // The verify-email screen must render even while logged out:
