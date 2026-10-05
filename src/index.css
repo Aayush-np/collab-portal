@@ -215,22 +215,22 @@ select option { background: var(--navy-700); }
 
 /* ── LOGO ─────────────────────────────────────────────────── */
 .logo-img {
-  width: 52px;
-  height: 52px;
+  width: 78px;
+  height: 78px;
   object-fit: contain;
   background: #ffffff;
-  padding: 6px;
-  border-radius: 12px;
+  padding: 8px;
+  border-radius: 16px;
   flex-shrink: 0;
 }
 
 .auth-logo {
-  width: 52px;
-  height: 52px;
+  width: 78px;
+  height: 78px;
   object-fit: contain;
   background: #ffffff;
-  padding: 6px;
-  border-radius: 12px;
+  padding: 8px;
+  border-radius: 16px;
 }
 
 .legal-logo {
