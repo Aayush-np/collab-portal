@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Check, X, MessageCircle, Briefcase } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Check, X, MessageCircle, Briefcase, Eye, Calendar, Users, ArrowRight } from 'lucide-react';
 import { apiGet, apiPost } from '../services/api';
 import { openChatWithUser } from '../utils/chatActions';
+import { useModalBehavior } from '../hooks/useModalBehavior';
 import { toast } from '../utils/toast';
 import './Requests.css';
 
@@ -12,6 +14,9 @@ export default function Requests({ accessToken, withAccessRetry, setPage, onCoun
   const [projectOutgoing, setProjectOutgoing] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
+  const [viewingIdea, setViewingIdea] = useState(null);
+
+  useModalBehavior(Boolean(viewingIdea), () => setViewingIdea(null));
 
   const load = async () => {
     if (!accessToken) {
@@ -32,10 +37,11 @@ export default function Requests({ accessToken, withAccessRetry, setPage, onCoun
         withAccessRetry((token) => apiGet('/ideas/requests?type=outgoing', token)),
       ]);
 
+      // Filter out requests whose idea no longer exists (e.g. deleted posts).
       const nextIncoming = incomingResult.requests || [];
       const nextOutgoing = outgoingResult.requests || [];
-      const nextProjectIncoming = projectIncomingResult.requests || [];
-      const nextProjectOutgoing = projectOutgoingResult.requests || [];
+      const nextProjectIncoming = (projectIncomingResult.requests || []).filter((r) => r.idea);
+      const nextProjectOutgoing = (projectOutgoingResult.requests || []).filter((r) => r.idea);
       setIncoming(nextIncoming);
       setOutgoing(nextOutgoing);
       setProjectIncoming(nextProjectIncoming);
@@ -54,6 +60,20 @@ export default function Requests({ accessToken, withAccessRetry, setPage, onCoun
       onCountsChange?.(0);
       setLoading(false);
     });
+  }, [accessToken]);
+
+  // Keep the lists fresh when ideas are created/edited/deleted elsewhere.
+  useEffect(() => {
+    let timer = null;
+    const onIdeasChanged = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => { load().catch(() => {}); }, 300);
+    };
+    window.addEventListener('ideas-changed', onIdeasChanged);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('ideas-changed', onIdeasChanged);
+    };
   }, [accessToken]);
 
   const acceptRequest = async (requestId) => {
@@ -215,6 +235,9 @@ export default function Requests({ accessToken, withAccessRetry, setPage, onCoun
                         </div>
                       </div>
                       <div className="request-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => setViewingIdea(request.idea)} title="View project">
+                          <Eye size={13} /> View
+                        </button>
                         <button className="btn btn-lime btn-sm" onClick={() => acceptProjectRequest(request.id)} disabled={busyId === request.id}>
                           <Check size={13} /> Accept
                         </button>
@@ -246,6 +269,9 @@ export default function Requests({ accessToken, withAccessRetry, setPage, onCoun
                         </div>
                       </div>
                       <div className="request-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => setViewingIdea(request.idea)} title="View project">
+                          <Eye size={13} /> View
+                        </button>
                         <span className={`badge ${request.status === 'accepted' ? 'badge-lime' : request.status === 'rejected' ? 'badge-red' : 'badge-amber'}`}>
                           {request.status === 'accepted' ? 'Accepted' : request.status === 'rejected' ? 'Rejected' : 'Requested'}
                         </span>
@@ -264,6 +290,85 @@ export default function Requests({ accessToken, withAccessRetry, setPage, onCoun
 
         </div>
       )}
+
+      {/* Project detail modal (from View on a project request) */}
+      <AnimatePresence>
+        {viewingIdea && (
+          <motion.div
+            className="project-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setViewingIdea(null)}
+          >
+            <motion.div
+              className="project-modal card"
+              initial={{ opacity: 0, y: 14, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ type: 'spring', bounce: 0.18, visualDuration: 0.35 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+            <div className="request-idea-header">
+              <div>
+                <span className={`badge ${viewingIdea.type === 'internship' ? 'badge-amber' : 'badge-lime'}`}>
+                  {viewingIdea.type === 'internship' ? 'Internship' : 'Project'}
+                </span>
+                <h2 className="request-idea-title">{viewingIdea.title}</h2>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  by {viewingIdea.author?.name || 'Owner'}
+                  {viewingIdea.author?.usn ? ` · ${viewingIdea.author.usn}` : ''}
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setViewingIdea(null)} aria-label="Close">
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="request-idea-desc">{viewingIdea.description}</p>
+
+            {viewingIdea.requirements && (
+              <div className="request-idea-section">
+                <div className="request-idea-section-label">Requirements</div>
+                <p className="request-idea-desc">{viewingIdea.requirements}</p>
+              </div>
+            )}
+
+            {(viewingIdea.skills || []).length > 0 && (
+              <div className="request-idea-section">
+                <div className="request-idea-section-label">Skills</div>
+                <div className="request-idea-chips">
+                  {viewingIdea.skills.map((s) => <span key={s} className="skill-tag">{s}</span>)}
+                </div>
+              </div>
+            )}
+
+            {(viewingIdea.tags || []).length > 0 && (
+              <div className="request-idea-section">
+                <div className="request-idea-section-label">Tags</div>
+                <div className="request-idea-chips">
+                  {viewingIdea.tags.map((t) => <span key={t} className="badge badge-teal">{t}</span>)}
+                </div>
+              </div>
+            )}
+
+            <div className="request-idea-meta">
+              <span><Users size={13} /> {viewingIdea.currentMembers || 1}/{viewingIdea.teamSize || 2} members</span>
+              {viewingIdea.deadline && <span><Calendar size={13} /> Due {viewingIdea.deadline}</span>}
+            </div>
+
+            {viewingIdea.github && (
+              <div className="request-idea-section">
+                <a className="btn btn-outline btn-sm" href={viewingIdea.github} target="_blank" rel="noreferrer">
+                  <ArrowRight size={13} /> GitHub Repository
+                </a>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

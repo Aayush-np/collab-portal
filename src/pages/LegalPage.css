@@ -57,12 +57,7 @@
   border-bottom: 1px solid var(--navy-600);
 }
 
-.legal-logo {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-  border-radius: var(--radius-sm);
-}
+/* (base .legal-logo sizing + white chip lives in index.css) */
 
 .legal-brand-name {
   font-size: 18px;

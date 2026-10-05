@@ -52,14 +52,14 @@
 
 .auth-brand {
   display: inline-flex;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: rgba(251,191,36, 0.14);
-  color: var(--lime);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: var(--white);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.1;
 }
 
 .auth-card h1 {

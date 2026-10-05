@@ -215,18 +215,31 @@ select option { background: var(--navy-700); }
 
 /* ── LOGO ─────────────────────────────────────────────────── */
 .logo-img {
-  width: 34px;
-  height: 34px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
-  border-radius: var(--radius-sm);
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 
 .auth-logo {
-  width: 38px;
-  height: 38px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
-  border-radius: var(--radius-sm);
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.legal-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: #ffffff;
+  padding: 5px;
+  border-radius: 12px;
 }
 
 .auth-legal {

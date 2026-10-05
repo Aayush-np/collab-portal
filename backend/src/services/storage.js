@@ -520,6 +520,19 @@ export const deleteProjectRequestsByUser = async (userId) => {
   writeJson(db);
 };
 
+// Requests for a deleted idea must not linger in users' request lists.
+export const deleteProjectRequestsByIdeaId = async (ideaId) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    await db.collection('projectRequests').deleteMany({ ideaId });
+    return;
+  }
+
+  const db = readJson();
+  db.projectRequests = (db.projectRequests || []).filter((r) => r.ideaId !== ideaId);
+  writeJson(db);
+};
+
 const normalizeConnectionRequest = (request) => ({
   ...request,
   status: request.status || 'pending',

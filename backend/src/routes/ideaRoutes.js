@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { requireAuth } from '../middleware/auth.js';
 import {
   deleteIdeaById,
+  deleteProjectRequestsByIdeaId,
   findIdeaById,
   findProjectRequestById,
   findProfileByUserId,
@@ -232,6 +233,9 @@ router.delete('/:id', async (req, res) => {
   }
 
   await deleteIdeaById(idea.id);
+  // Drop pending/accepted requests for this idea so they don't linger
+  // in people's request lists pointing at a deleted post.
+  await deleteProjectRequestsByIdeaId(idea.id);
   emitToAll('ideas:changed', { action: 'deleted', ideaId: idea.id });
 
   await addAuditLog({
