@@ -7,6 +7,7 @@ A full-stack collaboration platform for CMRIT students to discover, post, and co
 - **Project & Internship Discovery** — Post and discover collaboration opportunities with skill-based filtering
 - **Smart Matching** — Find teammates based on skills, interests, and compatibility scores
 - **Real-time Messaging** — Socket.IO powered chat with typing indicators, read receipts, favorites, and clean delivery ticks
+- **Team Group Chats** — accepting someone into your project auto-creates a group chat with the full team; named after the project by default, renameable by the project owner; members can open each other's profiles from the chat
 - **Auto Chat on Connect** — Accepting a connection instantly creates a chat, so you can message new connections right away
 - **Real-time Notifications** — Toast + bell menu alerts for new messages, connection requests/accepts, and project requests (stored server-side, mark-as-read, clear-all)
 - **Live Feed** — New/edited/deleted posts appear for everyone instantly via Socket.IO — no page refresh needed
@@ -183,10 +184,11 @@ VITE_GOOGLE_CLIENT_ID=
 - `POST /api/ideas/:id/request` — Apply to project
 
 ### Messages
-- `GET /api/messages/conversations` — List conversations
+- `GET /api/messages/conversations` — List conversations (DMs + team groups)
 - `POST /api/messages/conversations` — Start/create conversation
 - `POST /api/messages/send` — Send message
 - `GET /api/messages/users?q=` — Search users
+- `PUT /api/messages/:id/name` — Rename a team group chat (project owner only)
 
 ### Connections
 - `GET /api/connections/summary` — Connection counts

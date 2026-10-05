@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { Search, ArrowLeft, Plus, ArrowRight, Star, Trash2, Inbox, MessageSquare, Check, CheckCheck } from 'lucide-react';
-import { apiDelete, apiGet, apiPost } from '../services/api';
+import { Search, ArrowLeft, Plus, ArrowRight, Star, Trash2, Inbox, MessageSquare, Check, CheckCheck, Pencil } from 'lucide-react';
+import { apiDelete, apiGet, apiPost, apiPut } from '../services/api';
+import { toast } from '../utils/toast';
 import './Messages.css';
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -16,7 +17,7 @@ const formatTime = (iso) => {
   }
 };
 
-export default function Messages({ currentUser, accessToken, withAccessRetry, onUnreadChange }) {
+export default function Messages({ currentUser, accessToken, withAccessRetry, onUnreadChange, setPage, setViewingUserId }) {
   const [convos, setConvos] = useState([]);
   const [activeId, setActiveId] = useState('');
   const [input, setInput] = useState('');
@@ -29,6 +30,9 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
   const [busyMessageId, setBusyMessageId] = useState('');
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [listMode, setListMode] = useState('all');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const renameActiveRef = useRef(false);
   const socketRef = useRef(null);
   const typingSentRef = useRef(false);
   const typingTimeoutRef = useRef(null);
@@ -46,6 +50,12 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
   }, [currentUser?.id]);
 
   const active = convos.find((c) => c.id === activeId) || null;
+
+  // Fast sender lookup for group chats (per-message initials).
+  const memberById = useMemo(
+    () => new Map((active?.members || []).map((m) => [m.id, m])),
+    [active?.members]
+  );
 
   // Keep the newest message in view when messages arrive or the chat changes.
   useEffect(() => {
@@ -330,6 +340,42 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
     }
   };
 
+  const openUserProfile = (userId) => {
+    if (!userId) return;
+    setViewingUserId?.(userId);
+    setPage?.('profile');
+  };
+
+  const startRename = () => {
+    if (!active?.isGroup) return;
+    renameActiveRef.current = true;
+    setNameDraft(active?.name || '');
+    setIsRenaming(true);
+  };
+
+  const cancelRename = () => {
+    renameActiveRef.current = false;
+    setIsRenaming(false);
+  };
+
+  const saveRename = async () => {
+    // Guard: a blur after Escape must not save.
+    if (!renameActiveRef.current) return;
+    renameActiveRef.current = false;
+    const name = nameDraft.trim();
+    setIsRenaming(false);
+    if (!name || !active) return;
+    try {
+      const result = await withAccessRetry((token) => apiPut(`/messages/${active.id}/name`, { name }, token));
+      if (result?.conversation) {
+        setConvos((prev) => prev.map((c) => (c.id === result.conversation.id ? result.conversation : c)));
+      }
+      toast('Group name updated.', 'success');
+    } catch (e) {
+      toast(e.message || 'Could not rename group.', 'error');
+    }
+  };
+
   return (
     <div className="messages-page">
       <aside className={`convo-list ${mobileView === 'chat' ? 'mobile-hide' : ''}`}>
@@ -377,11 +423,23 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
                 className={`convo-item ${active?.id === c.id ? 'active' : ''}`}
                 onClick={() => { setActiveId(c.id); setMobileView('chat'); }}
               >
-                <div className="avatar avatar-md" style={{ background: 'var(--teal)', color: '#0a0f1c', fontWeight: 700, fontSize: 15 }}>
+                <div
+                  className="avatar avatar-md"
+                  style={{ background: 'var(--teal)', color: '#0a0f1c', fontWeight: 700, fontSize: 15, cursor: c.isGroup ? 'default' : 'pointer' }}
+                  title={c.isGroup ? (c.name || 'Team chat') : `View ${c.partner?.name || 'user'}'s profile`}
+                  onClick={(e) => {
+                    if (c.isGroup) return;
+                    e.stopPropagation();
+                    openUserProfile(c.partner?.id);
+                  }}
+                >
                   {c.partner?.initials || 'U'}
                 </div>
                 <div className="convo-info">
-                  <div className="convo-name">{c.partner?.name || 'User'}</div>
+                  <div className="convo-name">
+                    {c.partner?.name || 'User'}
+                    {c.isGroup && <span className="badge badge-teal convo-team-badge">Team</span>}
+                  </div>
                   <div className="convo-last muted">{(c.lastMessage || '').slice(0, 38)}{(c.lastMessage || '').length > 38 ? '...' : ''}</div>
                 </div>
                 <div className="convo-meta">
@@ -402,24 +460,57 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
               <button className="btn btn-ghost mobile-back" onClick={() => setMobileView('list')}>
                 <ArrowLeft size={16} />
               </button>
-              <div className="avatar avatar-sm" style={{ background: 'var(--teal)', color: '#0a0f1c', fontWeight: 700, fontSize: 11 }}>
-                {active.partner?.initials || 'U'}
-              </div>
-              <div>
-                <div className="chat-name">{active.partner?.name || 'User'}</div>
-                <div className="chat-status">
-                  <span className="notif-dot" />
-                  {partnerTyping ? 'Typing...' : 'Live chat'}
+              <button
+                type="button"
+                className={`chat-user-trigger ${active.isGroup ? 'is-group' : ''}`}
+                onClick={active.isGroup ? undefined : () => openUserProfile(active.partner?.id)}
+                title={active.isGroup ? (active.name || 'Team chat') : `View ${active.partner?.name || 'user'}'s profile`}
+              >
+                <div className="avatar avatar-sm" style={{ background: 'var(--teal)', color: '#0a0f1c', fontWeight: 700, fontSize: 11 }}>
+                  {active.partner?.initials || 'U'}
                 </div>
-              </div>
+                <div className="chat-user-info">
+                  {isRenaming ? (
+                    <input
+                      className="chat-rename-input"
+                      value={nameDraft}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); saveRename(); }
+                        if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
+                      }}
+                      onBlur={saveRename}
+                      autoFocus
+                      maxLength={80}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <div className="chat-name">
+                      {active.partner?.name || 'User'}
+                      {active.isGroup && <span className="badge badge-teal convo-team-badge">Team</span>}
+                    </div>
+                  )}
+                  <div className="chat-status">
+                    <span className="notif-dot" />
+                    {partnerTyping ? 'Typing...' : (active.isGroup ? `${active.participants?.length || 0} members` : 'Live chat')}
+                  </div>
+                </div>
+              </button>
               <div className="chat-header-actions">
+                {active.isGroup && active.ownerId === currentUser.id && !isRenaming && (
+                  <button className="btn btn-outline btn-sm" onClick={startRename} title="Rename group">
+                    <Pencil size={13} />
+                  </button>
+                )}
                 <button className="btn btn-outline btn-sm" onClick={toggleFavorite} disabled={busyConversationId === active.id}>
                   <Star size={13} fill={active.favorite ? 'currentColor' : 'none'} />
                   {active.favorite ? 'Favorited' : 'Favorite'}
                 </button>
-                <button className="btn btn-outline btn-sm" onClick={clearChat} disabled={busyConversationId === active.id}>
-                  <Trash2 size={13} /> Delete chat
-                </button>
+                {(!active.isGroup || active.ownerId === currentUser.id) && (
+                  <button className="btn btn-outline btn-sm" onClick={clearChat} disabled={busyConversationId === active.id}>
+                    <Trash2 size={13} /> Delete chat
+                  </button>
+                )}
               </div>
             </div>
 
@@ -432,16 +523,25 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
               )}
               {(active.messages || []).map((msg, index, messages) => {
                 const isMe = msg.from === currentUser.id;
+                const sender = memberById.get(msg.from);
                 // Read receipt: only on the sender's LAST message (WhatsApp-style).
                 const nextMsg = messages[index + 1];
                 const isLastOwn = isMe && (!nextMsg || nextMsg.from !== currentUser.id);
-                const partnerUnread = Number(active.unreadBy?.[active.partner?.id] || 0);
+                // DM: partner has unread. Group: any other member has unread.
+                const hasUnread = active.isGroup
+                  ? Object.entries(active.unreadBy || {}).some(([uid, n]) => uid !== currentUser.id && Number(n) > 0)
+                  : Number(active.unreadBy?.[active.partner?.id] || 0) > 0;
 
                 return (
                   <div key={msg.id} className={`message-row ${isMe ? 'me' : 'them'}`}>
                     {!isMe && (
-                      <div className="avatar avatar-sm" style={{ background: 'var(--teal)', color: '#0a0f1c', fontWeight: 700, fontSize: 11 }}>
-                        {active.partner?.initials || 'U'}
+                      <div
+                        className="avatar avatar-sm"
+                        style={{ background: 'var(--teal)', color: '#0a0f1c', fontWeight: 700, fontSize: 11, cursor: active.isGroup ? 'pointer' : 'default' }}
+                        title={active.isGroup ? `View ${sender?.name || 'user'}'s profile` : undefined}
+                        onClick={active.isGroup ? () => openUserProfile(sender?.id) : undefined}
+                      >
+                        {sender?.initials || active.partner?.initials || 'U'}
                       </div>
                     )}
                     <div className="message-bubble">
@@ -449,9 +549,9 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
                       <div className="message-time muted">
                         {formatTime(msg.createdAt)}
                         {isLastOwn && (
-                          partnerUnread === 0
-                            ? <CheckCheck size={13} className="msg-tick read" />
-                            : <Check size={13} className="msg-tick" />
+                          hasUnread
+                            ? <Check size={13} className="msg-tick" />
+                            : <CheckCheck size={13} className="msg-tick read" />
                         )}
                       </div>
                     </div>
@@ -473,7 +573,7 @@ export default function Messages({ currentUser, accessToken, withAccessRetry, on
 
             <div className="chat-input-row">
               <input
-                placeholder={`Message ${active.partner?.name || 'user'}...`}
+                placeholder={active.isGroup ? `Message the team...` : `Message ${active.partner?.name || 'user'}...`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } }}

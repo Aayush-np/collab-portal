@@ -366,18 +366,34 @@ export const findConversationById = async (conversationId) => {
   return found ? normalizeConversation(found) : null;
 };
 
-export const findConversationBetweenUsers = async (a, b) => {
+export const findConversationByIdeaId = async (ideaId) => {
   if (dbProvider === 'mongo') {
     const db = await mongo();
     const doc = await db.collection('conversations').findOne(
-      { participants: { $all: [a, b] } },
+      { isGroup: true, ideaId },
       { projection: { _id: 0 } }
     );
     return doc ? normalizeConversation(doc) : null;
   }
 
   const db = readJson();
-  const found = db.conversations.find((c) => c.participants.includes(a) && c.participants.includes(b));
+  const found = (db.conversations || []).find((c) => c.isGroup && c.ideaId === ideaId);
+  return found ? normalizeConversation(found) : null;
+};
+
+export const findConversationBetweenUsers = async (a, b) => {
+  if (dbProvider === 'mongo') {
+    const db = await mongo();
+    // Direct messages only — a group containing both users is not a DM.
+    const doc = await db.collection('conversations').findOne(
+      { participants: { $all: [a, b] }, isGroup: { $ne: true } },
+      { projection: { _id: 0 } }
+    );
+    return doc ? normalizeConversation(doc) : null;
+  }
+
+  const db = readJson();
+  const found = db.conversations.find((c) => !c.isGroup && c.participants.includes(a) && c.participants.includes(b));
   return found ? normalizeConversation(found) : null;
 };
 

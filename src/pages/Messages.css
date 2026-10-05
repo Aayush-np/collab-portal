@@ -250,3 +250,37 @@
     margin-left: 0;
   }
 }
+
+/* -- Profile trigger + group chats --------------------------- */
+.chat-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+.chat-user-trigger:hover:not(.is-group) .chat-name { color: var(--lime); transition: color var(--transition); }
+.chat-user-trigger.is-group { cursor: default; }
+.chat-user-trigger.is-group:hover .chat-name { color: inherit; }
+.chat-user-info { min-width: 0; }
+
+.chat-rename-input {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  padding: 4px 8px;
+  max-width: 220px;
+  border-radius: var(--radius-sm);
+}
+
+.convo-team-badge {
+  margin-left: 8px;
+  font-size: 9px;
+  padding: 2px 7px;
+}

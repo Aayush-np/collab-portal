@@ -16,23 +16,78 @@ import { notifyUsers } from '../services/notificationService.js';
 
 const router = express.Router();
 
-const mapConversationForUser = async (conversation, currentUserId) => {
-  const otherUserId = conversation.participants.find((id) => id !== currentUserId) || currentUserId;
-  const [otherUser, otherProfile] = await Promise.all([
-    findUserById(otherUserId),
-    findProfileByUserId(otherUserId),
+const toInitials = (name) => {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'CH';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+};
+
+const asChatMember = async (userId) => {
+  const [user, profile] = await Promise.all([
+    findUserById(userId),
+    findProfileByUserId(userId),
   ]);
+  return {
+    id: userId,
+    name: user?.name || profile?.name || 'User',
+    email: user?.email || '',
+    initials: profile?.initials || toInitials(user?.name),
+    avatar: profile?.avatar || null,
+  };
+};
+
+const mapConversationForUser = async (conversation, currentUserId) => {
+  // Group chats (project teams): "partner" represents the group itself.
+  if (conversation.isGroup) {
+    const members = await Promise.all(
+      (conversation.participants || []).map((id) => asChatMember(id))
+    );
+    const name = conversation.name || 'Group';
+
+    return {
+      id: conversation.id,
+      participants: conversation.participants,
+      unreadBy: conversation.unreadBy || {},
+      isGroup: true,
+      name,
+      ownerId: conversation.ownerId || null,
+      ideaId: conversation.ideaId || null,
+      partner: {
+        id: conversation.id,
+        name,
+        initials: toInitials(name),
+        avatar: null,
+        email: '',
+        isGroup: true,
+      },
+      members,
+      lastMessage: conversation.lastMessage || '',
+      updatedAt: conversation.updatedAt,
+      unread: Number(conversation.unreadBy?.[currentUserId] || 0),
+      favorite: Boolean(conversation.favoriteBy?.[currentUserId]),
+      messages: conversation.messages || [],
+    };
+  }
+
+  // Direct messages.
+  const otherUserId = conversation.participants.find((id) => id !== currentUserId) || currentUserId;
+  const otherUser = await asChatMember(otherUserId);
 
   return {
     id: conversation.id,
     participants: conversation.participants,
     unreadBy: conversation.unreadBy || {},
+    isGroup: false,
+    name: null,
+    ownerId: null,
+    ideaId: null,
     partner: {
       id: otherUserId,
-      name: otherUser?.name || otherProfile?.name || 'User',
-      initials: otherProfile?.initials || String(otherUser?.name || 'U').slice(0, 1).toUpperCase(),
-      avatar: otherProfile?.avatar || null,
-      email: otherUser?.email || '',
+      name: otherUser.name,
+      initials: otherUser.initials,
+      avatar: otherUser.avatar,
+      email: otherUser.email,
     },
     lastMessage: conversation.lastMessage || '',
     updatedAt: conversation.updatedAt,
@@ -217,6 +272,43 @@ router.post('/:id/favorite', async (req, res) => {
   return res.json({ conversation: mapped, favorite: nextFavorite });
 });
 
+// Rename a group chat — only the project owner (group creator) may do this.
+router.put('/:id/name', async (req, res) => {
+  const conversation = await findConversationById(req.params.id);
+  if (!conversation || !conversation.participants.includes(req.auth.userId)) {
+    return res.status(404).json({ error: 'Conversation not found.' });
+  }
+
+  if (!conversation.isGroup) {
+    return res.status(400).json({ error: 'Only group chats can be renamed.' });
+  }
+
+  if (conversation.ownerId !== req.auth.userId) {
+    return res.status(403).json({ error: 'Only the project owner can rename this group.' });
+  }
+
+  const name = String(req.body?.name || '').trim().slice(0, 80);
+  if (!name) {
+    return res.status(400).json({ error: 'Group name is required.' });
+  }
+
+  const next = {
+    ...conversation,
+    name,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await upsertConversation(next);
+  const mapped = await mapConversationForUser(next, req.auth.userId);
+
+  emitToUsers(next.participants, 'conversation:updated', {
+    conversationId: next.id,
+    name,
+  });
+
+  return res.json({ conversation: mapped });
+});
+
 router.delete('/:id/messages/:messageId', async (req, res) => {
   const conversation = await findConversationById(req.params.id);
   if (!conversation || !conversation.participants.includes(req.auth.userId)) {
@@ -256,6 +348,11 @@ router.delete('/:id', async (req, res) => {
   const conversation = await findConversationById(req.params.id);
   if (!conversation || !conversation.participants.includes(req.auth.userId)) {
     return res.status(404).json({ error: 'Conversation not found.' });
+  }
+
+  // Group chats belong to the project team — only the owner can delete them.
+  if (conversation.isGroup && conversation.ownerId !== req.auth.userId) {
+    return res.status(403).json({ error: 'Only the project owner can delete this group chat.' });
   }
 
   await deleteConversationById(conversation.id);

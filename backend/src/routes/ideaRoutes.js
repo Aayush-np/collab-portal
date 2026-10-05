@@ -2,8 +2,10 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { requireAuth } from '../middleware/auth.js';
 import {
+  deleteConversationById,
   deleteIdeaById,
   deleteProjectRequestsByIdeaId,
+  findConversationByIdeaId,
   findIdeaById,
   findProjectRequestById,
   findProfileByUserId,
@@ -14,6 +16,7 @@ import {
   saveProjectRequest,
   saveIdea,
   updateIdeaById,
+  upsertConversation,
 } from '../services/storage.js';
 import { addAuditLog } from '../services/storage.js';
 import { emitToUsers } from '../services/socketHub.js';
@@ -236,6 +239,17 @@ router.delete('/:id', async (req, res) => {
   // Drop pending/accepted requests for this idea so they don't linger
   // in people's request lists pointing at a deleted post.
   await deleteProjectRequestsByIdeaId(idea.id);
+
+  // The team group chat belongs to the idea — remove it too.
+  const groupConversation = await findConversationByIdeaId(idea.id);
+  if (groupConversation) {
+    await deleteConversationById(groupConversation.id);
+    emitToUsers(groupConversation.participants, 'conversation:deleted', {
+      conversationId: groupConversation.id,
+      clearedBy: req.auth.userId,
+    });
+  }
+
   emitToAll('ideas:changed', { action: 'deleted', ideaId: idea.id });
 
   await addAuditLog({
@@ -333,6 +347,48 @@ router.post('/requests/:id/accept', async (req, res) => {
     currentMembers: Math.min(teamSize, currentMembers + 1),
     collaboratorIds: Array.from(new Set([...(idea.collaboratorIds || []), projectRequest.fromUserId])),
     updatedAt: new Date().toISOString(),
+  });
+
+  // Auto-manage the team group chat: create it on the first acceptance,
+  // merge newly accepted members into it afterwards.
+  let groupConversation = await findConversationByIdeaId(idea.id);
+  const teamIds = [updatedIdea.authorId, ...(updatedIdea.collaboratorIds || [])];
+  const now = new Date().toISOString();
+
+  if (!groupConversation) {
+    groupConversation = {
+      id: uuidv4(),
+      participants: Array.from(new Set(teamIds)),
+      messages: [],
+      unreadBy: Object.fromEntries(Array.from(new Set(teamIds)).map((id) => [id, 0])),
+      lastMessage: `Team chat for "${updatedIdea.title}" — say hi 👋`,
+      isGroup: true,
+      name: updatedIdea.title,
+      ideaId: updatedIdea.id,
+      ownerId: updatedIdea.authorId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await upsertConversation(groupConversation);
+  } else {
+    const added = teamIds.filter((id) => !groupConversation.participants.includes(id));
+    if (added.length > 0) {
+      groupConversation = {
+        ...groupConversation,
+        participants: Array.from(new Set([...groupConversation.participants, ...teamIds])),
+        unreadBy: {
+          ...groupConversation.unreadBy,
+          ...Object.fromEntries(added.map((id) => [id, 0])),
+        },
+        updatedAt: now,
+      };
+      await upsertConversation(groupConversation);
+    }
+  }
+
+  emitToUsers(groupConversation.participants, 'conversation:updated', {
+    conversationId: groupConversation.id,
+    reason: 'team-updated',
   });
 
   emitToUsers([projectRequest.fromUserId, projectRequest.toUserId], 'project:request:updated', { requestId: updatedRequest.id, status: 'accepted', ideaId: idea.id });

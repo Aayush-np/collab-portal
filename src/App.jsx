@@ -529,6 +529,8 @@ export default function App() {
             accessToken={accessToken}
             withAccessRetry={withAccessRetry}
             onUnreadChange={setMessageUnreadCount}
+            setPage={setPage}
+            setViewingUserId={setViewingUserId}
           />
         );
       case 'profile':
